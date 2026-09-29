@@ -1,51 +1,59 @@
 import { createBrowserRouter, Navigate } from 'react-router'
-import { AdminLayout } from '@/components/layout/AdminLayout'
 import { NotFoundPage } from '@/components/layout/NotFoundPage'
-import { ChangePasswordPage } from '@/features/auth/ChangePasswordPage'
-import { LoginPage } from '@/features/auth/LoginPage'
-import { RequireAuth } from '@/features/auth/RequireAuth'
-import { EmployeesPage } from '@/features/employees/EmployeesPage'
-import { MatrixPage } from '@/features/matrix/MatrixPage'
-import { NewSessionPage } from '@/features/sessions/NewSessionPage'
-import { SessionPage } from '@/features/sessions/SessionPage'
-import { SessionsPage } from '@/features/sessions/SessionsPage'
-import { SurveyPage } from '@/features/survey/SurveyPage'
-import { UsersPage } from '@/features/users/UsersPage'
+import { FullPageSpinner, RequireAuth } from '@/features/auth/RequireAuth'
 
+// Страницы грузятся по требованию: анкета респондента (часто с телефона) не тянет админку и графики.
 export const router = createBrowserRouter([
   { path: '/', element: <Navigate to="/admin" replace /> },
-  { path: '/login', element: <LoginPage /> },
+  { path: '/login', lazy: async () => ({ Component: (await import('@/features/auth/LoginPage')).LoginPage }) },
   {
     path: '/change-password',
-    element: (
-      <RequireAuth allowPasswordChange>
-        <ChangePasswordPage />
-      </RequireAuth>
-    ),
+    lazy: async () => {
+      const { ChangePasswordPage } = await import('@/features/auth/ChangePasswordPage')
+      return {
+        Component: () => (
+          <RequireAuth allowPasswordChange>
+            <ChangePasswordPage />
+          </RequireAuth>
+        ),
+      }
+    },
   },
   {
     path: '/admin',
-    element: (
-      <RequireAuth>
-        <AdminLayout />
-      </RequireAuth>
-    ),
-    children: [
-      { index: true, element: <SessionsPage /> },
-      { path: 'sessions/new', element: <NewSessionPage /> },
-      { path: 'sessions/:id', element: <SessionPage /> },
-      { path: 'employees', element: <EmployeesPage /> },
-      { path: 'matrix', element: <MatrixPage /> },
-      {
-        path: 'users',
-        element: (
-          <RequireAuth adminOnly>
-            <UsersPage />
+    HydrateFallback: FullPageSpinner,
+    lazy: async () => {
+      const { AdminLayout } = await import('@/components/layout/AdminLayout')
+      return {
+        Component: () => (
+          <RequireAuth>
+            <AdminLayout />
           </RequireAuth>
         ),
+      }
+    },
+    children: [
+      { index: true, lazy: async () => ({ Component: (await import('@/features/sessions/SessionsPage')).SessionsPage }) },
+      { path: 'sessions/new', lazy: async () => ({ Component: (await import('@/features/sessions/NewSessionPage')).NewSessionPage }) },
+      { path: 'sessions/:id', lazy: async () => ({ Component: (await import('@/features/sessions/SessionPage')).SessionPage }) },
+      { path: 'sessions/:id/report', lazy: async () => ({ Component: (await import('@/features/reports/ReportPage')).ReportPage }) },
+      { path: 'employees', lazy: async () => ({ Component: (await import('@/features/employees/EmployeesPage')).EmployeesPage }) },
+      { path: 'matrix', lazy: async () => ({ Component: (await import('@/features/matrix/MatrixPage')).MatrixPage }) },
+      {
+        path: 'users',
+        lazy: async () => {
+          const { UsersPage } = await import('@/features/users/UsersPage')
+          return {
+            Component: () => (
+              <RequireAuth adminOnly>
+                <UsersPage />
+              </RequireAuth>
+            ),
+          }
+        },
       },
     ],
   },
-  { path: '/survey/:token', element: <SurveyPage /> },
+  { path: '/survey/:token', lazy: async () => ({ Component: (await import('@/features/survey/SurveyPage')).SurveyPage }) },
   { path: '*', element: <NotFoundPage /> },
 ])

@@ -1,4 +1,5 @@
 using MediatR;
+using ReviewPlatform.Application.Reports;
 using ReviewPlatform.Application.Sessions;
 using ReviewPlatform.Domain.Assessments;
 using ReviewPlatform.Domain.Matrix;
@@ -70,6 +71,17 @@ internal static class SessionEndpoints
         sessions.MapPost("/{id:guid}/participants/{participantId:guid}/reissue-link", async (Guid id, Guid participantId, ISender sender, CancellationToken ct) =>
             TypedResults.Ok(await sender.Send(new ReissueLinkCommand(id, participantId), ct)))
             .WithName("ReissueParticipantLink");
+
+        sessions.MapGet("/{id:guid}/report", async (Guid id, ISender sender, CancellationToken ct) =>
+            TypedResults.Ok(await sender.Send(new GetSessionReportQuery(id), ct)))
+            .WithName("GetSessionReport");
+
+        sessions.MapGet("/{id:guid}/report/export", async (Guid id, ISender sender, CancellationToken ct) =>
+        {
+            var file = await sender.Send(new ExportSessionReportQuery(id), ct);
+            return TypedResults.File(file.Content, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", file.FileName);
+        })
+            .WithName("ExportSessionReport");
 
         return app;
     }

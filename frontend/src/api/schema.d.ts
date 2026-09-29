@@ -356,6 +356,38 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/assessment-sessions/{id}/report": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["GetSessionReport"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/assessment-sessions/{id}/report/export": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["ExportSessionReport"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/surveys/{token}": {
         parameters: {
             query?: never;
@@ -431,6 +463,8 @@ export interface components {
             role: string;
             mustChangePassword: boolean;
         };
+        /** @enum {unknown} */
+        BlindSpot: "None" | "Overestimated" | "Underestimated";
         ChangePasswordRequest: {
             currentPassword: string;
             newPassword: string;
@@ -516,6 +550,18 @@ export interface components {
         };
         /** @enum {unknown} */
         LevelKind: "Current" | "Target";
+        LevelStats: {
+            /** Format: double */
+            score: null | number;
+            /** Format: double */
+            self: null | number;
+            /** Format: double */
+            metShare: null | number;
+            /** Format: int32 */
+            included: number;
+            /** Format: int32 */
+            total: number;
+        };
         LoginRequest: {
             email: string;
             password: string;
@@ -561,6 +607,57 @@ export interface components {
             text: string;
             gradeCode: string;
             levelKind: components["schemas"]["LevelKind"];
+        };
+        ReportGroupDto: {
+            name: string;
+            current: components["schemas"]["LevelStats"];
+            target: null | components["schemas"]["LevelStats"];
+        };
+        ReportIndicatorDto: {
+            /** Format: uuid */
+            id: string;
+            groupName: string;
+            level: components["schemas"]["LevelKind"];
+            gradeCode: string;
+            text: string;
+            /** Format: double */
+            score: null | number;
+            /** Format: int32 */
+            ratingsCount: number;
+            insufficientData: boolean;
+            isMet: null | boolean;
+            /** Format: int32 */
+            selfScore: null | number;
+            isDisputed: boolean;
+            blindSpot: components["schemas"]["BlindSpot"];
+            ratings: components["schemas"]["ReportRatingDto"][];
+        };
+        ReportPolicyDto: {
+            /** Format: double */
+            metThreshold: number;
+            /** Format: int32 */
+            quorum: number;
+            /** Format: double */
+            currentConfirmationHint: number;
+            /** Format: double */
+            targetReadinessHint: number;
+            /** Format: double */
+            groupReadinessHint: number;
+        };
+        ReportRaterDto: {
+            /** Format: uuid */
+            id: string;
+            fullName: string;
+            role: components["schemas"]["EvaluatorRole"];
+            status: components["schemas"]["ParticipantStatus"];
+        };
+        ReportRatingDto: {
+            /** Format: uuid */
+            raterId: string;
+            /** Format: int32 */
+            score: null | number;
+            notApplicable: boolean;
+            comment: null | string;
         };
         ResetPasswordRequest: {
             newPassword: string;
@@ -626,6 +723,30 @@ export interface components {
             ownerName: string;
             /** Format: date-time */
             createdAtUtc: string;
+        };
+        SessionReportDto: {
+            /** Format: uuid */
+            sessionId: string;
+            employeeName: string;
+            type: components["schemas"]["SessionType"];
+            currentGrade: components["schemas"]["GradeDto"];
+            targetGrade: null | components["schemas"]["GradeDto"];
+            status: components["schemas"]["SessionStatus"];
+            isPreliminary: boolean;
+            /** Format: int32 */
+            submittedCount: number;
+            /** Format: int32 */
+            participantCount: number;
+            /** Format: double */
+            currentConfirmation: null | number;
+            /** Format: double */
+            targetReadiness: null | number;
+            /** Format: int32 */
+            insufficientCount: number;
+            policy: components["schemas"]["ReportPolicyDto"];
+            groups: components["schemas"]["ReportGroupDto"][];
+            indicators: components["schemas"]["ReportIndicatorDto"][];
+            raters: components["schemas"]["ReportRaterDto"][];
         };
         /** @enum {unknown} */
         SessionStatus: "Draft" | "InProgress" | "Overdue" | "AwaitingDecision" | "Closed" | "Cancelled";
@@ -1364,6 +1485,48 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["ParticipantLinkDto"];
                 };
+            };
+        };
+    };
+    GetSessionReport: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SessionReportDto"];
+                };
+            };
+        };
+    };
+    ExportSessionReport: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };

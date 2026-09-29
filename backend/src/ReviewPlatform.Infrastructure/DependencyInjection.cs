@@ -3,8 +3,11 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using ReviewPlatform.Application.Common;
+using ReviewPlatform.Application.Reports;
+using ReviewPlatform.Domain.Assessments.Reporting;
 using ReviewPlatform.Infrastructure.Identity;
 using ReviewPlatform.Infrastructure.Persistence;
+using ReviewPlatform.Infrastructure.Reports;
 using ReviewPlatform.Infrastructure.Seeding;
 
 namespace ReviewPlatform.Infrastructure;
@@ -45,6 +48,8 @@ public static class DependencyInjection
         services.AddScoped<AuthService>();
         services.AddScoped<IIdentityService, IdentityService>();
         services.AddSingleton<ISurveyLinks, SurveyLinks>();
+        services.AddSingleton(configuration.GetSection(ReportPolicy.SectionName).Get<ReportPolicy>() ?? new ReportPolicy());
+        services.AddSingleton<IReportExporter, ReportExcelExporter>();
 
         services.Configure<SeedOptions>(configuration.GetSection(SeedOptions.SectionName));
         services.AddScoped<DatabaseInitializer>();

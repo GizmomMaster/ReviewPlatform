@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { ArrowLeft, Eye, Link2, MoreHorizontal, Pencil, Play, Plus, Trash2, XCircle } from 'lucide-react'
+import { ArrowLeft, BarChart3, Eye, Link2, MoreHorizontal, Pencil, Play, Plus, Trash2, XCircle } from 'lucide-react'
 import { useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router'
 import { toast } from 'sonner'
@@ -142,6 +142,13 @@ export function SessionPage() {
           <Button variant="outline" onClick={() => setDialog('preview')}>
             <Eye /> Анкета
           </Button>
+          {s.launchedAtUtc && (
+            <Button variant={s.status === 'AwaitingDecision' ? 'default' : 'outline'} asChild>
+              <Link to={`/admin/sessions/${s.id}/report`}>
+                <BarChart3 /> Отчёт
+              </Link>
+            </Button>
+          )}
           {isDraft && (
             <>
               <Button variant="outline" onClick={() => setDialog('edit')}>
