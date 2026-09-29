@@ -12,3 +12,9 @@ export const matrixQuery = (trackId: string) =>
     queryKey: ['tracks', trackId, 'matrix'],
     queryFn: ({ signal }) => unwrap(api.GET('/api/tracks/{trackId}/matrix', { params: { path: { trackId } }, signal })),
   })
+
+export const gradesQuery = queryOptions({
+  queryKey: ['grades'],
+  queryFn: ({ signal }) => unwrap(api.GET('/api/grades', { signal })),
+  staleTime: Infinity,
+})

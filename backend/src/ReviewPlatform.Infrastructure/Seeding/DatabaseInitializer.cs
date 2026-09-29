@@ -1,7 +1,10 @@
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using ReviewPlatform.Application.Common;
 using ReviewPlatform.Domain.Matrix;
+using ReviewPlatform.Infrastructure.Identity;
 using ReviewPlatform.Infrastructure.Persistence;
 
 namespace ReviewPlatform.Infrastructure.Seeding;
@@ -10,7 +13,13 @@ namespace ReviewPlatform.Infrastructure.Seeding;
 /// Применяет миграции и заполняет справочники. Идемпотентен: существующие данные не трогает.
 /// Выполняется под advisory-lock, чтобы несколько экземпляров приложения не заполняли БД одновременно.
 /// </summary>
-public sealed partial class DatabaseInitializer(AppDbContext db, IOptions<SeedOptions> options, ILogger<DatabaseInitializer> logger)
+public sealed partial class DatabaseInitializer(
+    AppDbContext db,
+    IOptions<SeedOptions> options,
+    IOptions<BootstrapAdminOptions> adminOptions,
+    RoleManager<IdentityRole<Guid>> roles,
+    UserManager<AppUser> users,
+    ILogger<DatabaseInitializer> logger)
 {
     private const long InitializationLockKey = 0x5245_5649_4557; // "REVIEW"
 
@@ -28,6 +37,8 @@ public sealed partial class DatabaseInitializer(AppDbContext db, IOptions<SeedOp
                 await SeedRoleRulesAsync(grades, cancellationToken);
                 var track = await SeedBackendTrackAsync(cancellationToken);
                 await SeedMatrixAsync(track, grades, cancellationToken);
+                await SeedRolesAsync();
+                await SeedBootstrapAdminAsync();
             }
             finally
             {
@@ -132,6 +143,53 @@ public sealed partial class DatabaseInitializer(AppDbContext db, IOptions<SeedOp
         await db.SaveChangesAsync(cancellationToken);
         LogMatrixSeeded(result.Rows.Count, track.Code);
     }
+
+    private async Task SeedRolesAsync()
+    {
+        foreach (var role in Roles.All)
+        {
+            if (!await roles.RoleExistsAsync(role))
+            {
+                ThrowIfFailed(await roles.CreateAsync(new IdentityRole<Guid>(role) { Id = Guid.CreateVersion7() }));
+            }
+        }
+    }
+
+    /// <summary>Первый администратор — только если пользователей ещё нет и заданы учётные данные.</summary>
+    private async Task SeedBootstrapAdminAsync()
+    {
+        if (await users.Users.AnyAsync())
+        {
+            return;
+        }
+
+        var admin = adminOptions.Value;
+        if (string.IsNullOrWhiteSpace(admin.Email) || string.IsNullOrWhiteSpace(admin.Password))
+        {
+            LogNoBootstrapAdmin();
+            return;
+        }
+
+        var email = admin.Email.Trim().ToLowerInvariant();
+        var user = new AppUser { UserName = email, Email = email, FullName = admin.FullName, MustChangePassword = true };
+        ThrowIfFailed(await users.CreateAsync(user, admin.Password));
+        ThrowIfFailed(await users.AddToRoleAsync(user, Roles.Admin));
+        LogBootstrapAdminCreated(email);
+    }
+
+    private static void ThrowIfFailed(IdentityResult result)
+    {
+        if (!result.Succeeded)
+        {
+            throw new InvalidOperationException(string.Join("; ", result.Errors.Select(e => e.Description)));
+        }
+    }
+
+    [LoggerMessage(Level = LogLevel.Warning, Message = "No users and BootstrapAdmin is not configured: nobody can sign in.")]
+    private partial void LogNoBootstrapAdmin();
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "Bootstrap admin {Email} created; password change is required on first sign-in.")]
+    private partial void LogBootstrapAdminCreated(string email);
 
     [LoggerMessage(Level = LogLevel.Warning, Message = "Seed matrix file not found: {Path}. Matrix left empty.")]
     private partial void LogMatrixFileMissing(string path);

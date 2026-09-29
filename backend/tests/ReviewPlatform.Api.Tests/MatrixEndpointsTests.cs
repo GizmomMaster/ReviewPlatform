@@ -1,7 +1,6 @@
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
-using System.Text.Json.Serialization;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using ReviewPlatform.Application.Matrix;
@@ -12,14 +11,14 @@ namespace ReviewPlatform.Api.Tests;
 
 public sealed class MatrixEndpointsTests(ApiFactory factory)
 {
-    private static readonly JsonSerializerOptions Json = new(JsonSerializerDefaults.Web) { Converters = { new JsonStringEnumConverter() } };
+    private static readonly JsonSerializerOptions Json = ApiFactory.Json;
 
     private static CancellationToken Ct => TestContext.Current.CancellationToken;
 
     [Fact]
     public async Task GetGrades_ReturnsEightGradesInOrder()
     {
-        using var client = factory.CreateClient();
+        using var client = await factory.SignInAsAdminAsync();
 
         var grades = await client.GetFromJsonAsync<List<GradeDto>>("/api/grades", Json, Ct);
 
@@ -31,7 +30,7 @@ public sealed class MatrixEndpointsTests(ApiFactory factory)
     [Fact]
     public async Task GetMatrix_ReturnsSeededBackendMatrix()
     {
-        using var client = factory.CreateClient();
+        using var client = await factory.SignInAsAdminAsync();
         var track = Assert.Single((await client.GetFromJsonAsync<List<TrackDto>>("/api/tracks", Json, Ct))!);
 
         var matrix = await client.GetFromJsonAsync<MatrixDto>($"/api/tracks/{track.Id}/matrix", Json, Ct);
@@ -51,11 +50,21 @@ public sealed class MatrixEndpointsTests(ApiFactory factory)
     [Fact]
     public async Task GetMatrix_UnknownTrack_Returns404()
     {
-        using var client = factory.CreateClient();
+        using var client = await factory.SignInAsAdminAsync();
 
         var response = await client.GetAsync($"/api/tracks/{Guid.NewGuid()}/matrix", Ct);
 
         Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task GetMatrix_Anonymous_Returns401()
+    {
+        using var client = factory.CreateClient();
+
+        var response = await client.GetAsync("/api/grades", Ct);
+
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
     }
 
     [Fact]

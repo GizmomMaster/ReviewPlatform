@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using ReviewPlatform.Domain.Employees;
 using ReviewPlatform.Domain.Matrix;
 
 namespace ReviewPlatform.Application.Common;
@@ -10,6 +11,7 @@ public interface IAppDbContext
     DbSet<CompetencyGroup> CompetencyGroups { get; }
     DbSet<Indicator> Indicators { get; }
     DbSet<GradeRoleRule> GradeRoleRules { get; }
+    DbSet<Employee> Employees { get; }
 
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 }

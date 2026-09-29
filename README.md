@@ -30,6 +30,20 @@ scripts/compose.sh up -d --build
 | Mailpit (письма) | http://localhost:8025 |
 | PostgreSQL | localhost:55432 |
 
+**Вход в режиме разработки:** `admin@example.com` / `Admin123!`. Это первый администратор, его создаёт бэкенд при пустой БД из `appsettings.Development.json`. При первом входе система попросит сменить пароль.
+
+### Продакшен
+
+В `ASPNETCORE_ENVIRONMENT=Production` dev-настройки не применяются. Обязательно задайте переменные окружения бэкенда:
+
+| Переменная | Назначение |
+|---|---|
+| `ConnectionStrings__Default` | Строка подключения к PostgreSQL |
+| `Jwt__SigningKey` | Секрет подписи токенов, не короче 32 символов |
+| `BootstrapAdmin__Email`, `BootstrapAdmin__Password` | Первый администратор (создаётся, только если пользователей ещё нет) |
+| `Auth__SecureCookies` | `true` (по умолчанию) при работе через HTTPS |
+| `Cors__AllowedOrigins__0` | Адрес фронтенда, если он на другом домене |
+
 ## Разработка
 
 **Backend** (нужен .NET SDK 10):
