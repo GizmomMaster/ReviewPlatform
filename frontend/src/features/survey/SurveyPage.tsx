@@ -73,7 +73,10 @@ function SurveyFlow({ token, survey }: { token: string; survey: Survey }) {
     }))
     .filter((p) => p.unanswered > 0 || p.missingComments > 0)
 
-  useEffect(() => window.scrollTo({ top: 0 }), [step])
+  // Тело в фигурных скобках: в новых браузерах scrollTo возвращает Promise, и React принял бы его за функцию очистки
+  useEffect(() => {
+    window.scrollTo({ top: 0 })
+  }, [step])
 
   const submit = useMutation({
     mutationFn: async () => {

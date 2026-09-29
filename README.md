@@ -34,15 +34,31 @@ scripts/compose.sh up -d --build
 
 ### Продакшен
 
-В `ASPNETCORE_ENVIRONMENT=Production` dev-настройки не применяются. Обязательно задайте переменные окружения бэкенда:
+```sh
+cp .env.example .env          # раскомментируйте и заполните блок «Продакшен»
+scripts/compose.sh -f docker-compose.yml -f docker-compose.prod.yml up -d --build
+```
 
-| Переменная | Назначение |
+`docker-compose.prod.yml` включает `ASPNETCORE_ENVIRONMENT=Production`, берёт секреты только из окружения (без обязательных переменных compose не запустится), убирает Mailpit и закрывает внешние порты PostgreSQL и API — наружу открыт только nginx фронтенда. HTTPS завершается на внешнем прокси или балансировщике; из-за `Auth__SecureCookies=true` без HTTPS вход не работает.
+
+| Переменная `.env` | Назначение |
 |---|---|
-| `ConnectionStrings__Default` | Строка подключения к PostgreSQL |
-| `Jwt__SigningKey` | Секрет подписи токенов, не короче 32 символов |
-| `BootstrapAdmin__Email`, `BootstrapAdmin__Password` | Первый администратор (создаётся, только если пользователей ещё нет) |
-| `Auth__SecureCookies` | `true` (по умолчанию) при работе через HTTPS |
-| `Cors__AllowedOrigins__0` | Адрес фронтенда, если он на другом домене |
+| `POSTGRES_PASSWORD` | Пароль БД |
+| `FRONTEND_BASE_URL` | Публичный адрес приложения — из него строятся ссылки в письмах |
+| `JWT_SIGNING_KEY` | Секрет подписи токенов, не короче 32 символов (`openssl rand -base64 48`) |
+| `BOOTSTRAP_ADMIN_EMAIL`, `BOOTSTRAP_ADMIN_PASSWORD` | Первый администратор: создаётся только в пустой БД, при первом входе меняет пароль |
+| `SMTP_HOST`, `SMTP_PORT`, `SMTP_SECURITY`, `SMTP_USERNAME`, `SMTP_PASSWORD` | Почтовый сервер |
+| `EMAIL_FROM_ADDRESS`, `EMAIL_FROM_NAME` | Отправитель писем |
+
+Без compose те же настройки задаются переменными окружения бэкенда в формате ASP.NET: `ConnectionStrings__Default`, `Jwt__SigningKey`, `Smtp__Host`, `Email__FromAddress` и т. д. `Cors__AllowedOrigins__0` нужен, только если фронтенд на другом домене.
+
+**Логи.** Бэкенд пишет в stdout JSON (одно событие на строку, формат Serilog compact) — удобно для Loki, ELK и т. п. Уровни — секция `Serilog:MinimumLevel`, например `Serilog__MinimumLevel__Default=Warning`. Токены анкет в логах API и nginx маскируются (`/api/surveys/***`). За nginx реальный адрес клиента берётся из `X-Forwarded-For` — от него считаются лимиты на вход и анкеты.
+
+**Резервные копии.** Сервис `backup` раз в сутки делает `pg_dump` в `./backups` (`BACKUP_DIR`) и хранит копии 14 дней (`BACKUP_KEEP_DAYS`). Каталог стоит регулярно копировать на другой сервер. Восстановление (текущие данные заменяются):
+
+```sh
+scripts/restore.sh backups/reviewplatform-20261001-030000.dump
+```
 
 ## Разработка
 
@@ -73,3 +89,12 @@ scripts/npm.sh run build
 scripts/compose.sh --profile dev up frontend-dev   # Vite с hot reload: http://localhost:5173
 scripts/npm.sh run gen:api                          # типы API из OpenAPI (бэкенд должен быть запущен)
 ```
+
+**Сквозные тесты** (Playwright) проходят сценарий «запуск → опрос с телефона → отчёт → решение» и правку матрицы против запущенного стека, письма проверяются через Mailpit:
+
+```sh
+scripts/compose.sh up -d --build
+scripts/e2e.sh                     # или scripts/e2e.sh e2e/matrix.spec.ts
+```
+
+Тесты входят первым администратором (`E2E_ADMIN_EMAIL` / `E2E_ADMIN_PASSWORD`, по умолчанию dev-учётка) и при первом прогоне меняют его временный пароль на `<пароль>e2e`. В CI они запускаются после сборки образов.

@@ -10,6 +10,9 @@ const string FrontendCorsPolicy = "frontend";
 
 var builder = WebApplication.CreateBuilder(args);
 
+builder.Services.AddApiLogging(builder.Configuration);
+builder.Services.AddReverseProxySupport(builder.Configuration);
+
 builder.Services.AddApplication();
 builder.Services.AddInfrastructure(builder.Configuration);
 builder.Services.AddApiAuth();
@@ -31,6 +34,8 @@ builder.Services.AddCors(options => options.AddPolicy(FrontendCorsPolicy, policy
 
 var app = builder.Build();
 
+app.UseForwardedHeaders();
+app.UseApiRequestLogging();
 app.UseExceptionHandler();
 app.UseStatusCodePages();
 app.UseCors(FrontendCorsPolicy);

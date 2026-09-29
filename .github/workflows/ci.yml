@@ -36,8 +36,37 @@ jobs:
       - run: npm run lint
       - run: npm run build
 
-  docker:
+  # Сборка образов и сквозные тесты против всего стека: запуск → опрос → отчёт → решение
+  e2e:
     runs-on: ubuntu-latest
+    needs: [backend, frontend]
     steps:
       - uses: actions/checkout@v4
-      - run: docker compose build
+      - run: docker compose up -d --build postgres mailpit backend frontend
+      - name: Wait for backend
+        run: |
+          for i in $(seq 1 60); do curl -sf http://localhost:5080/health && exit 0; sleep 2; done
+          docker compose logs backend; exit 1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: npm ci
+        working-directory: frontend
+      - run: npx playwright install --with-deps --only-shell chromium
+        working-directory: frontend
+      - run: npm run e2e
+        working-directory: frontend
+        env:
+          E2E_BASE_URL: http://localhost:8080
+          E2E_MAILPIT_URL: http://localhost:8025
+      - if: failure()
+        run: docker compose logs backend frontend
+      - if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: |
+            frontend/playwright-report
+            frontend/test-results

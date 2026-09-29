@@ -1,0 +1,39 @@
+# Продакшен: scripts/compose.sh -f docker-compose.yml -f docker-compose.prod.yml up -d --build
+# Секреты — только из окружения или .env (см. .env.example); без обязательных переменных compose не запустится.
+# Наружу открыт только frontend (nginx); HTTPS завершается на внешнем балансировщике или прокси.
+services:
+  postgres:
+    ports: !reset []
+    environment:
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?задайте POSTGRES_PASSWORD}
+    restart: unless-stopped
+
+  mailpit:
+    profiles: [dev]
+
+  backend:
+    ports: !reset []
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      ConnectionStrings__Default: Host=postgres;Database=${POSTGRES_DB:-reviewplatform};Username=${POSTGRES_USER:-reviewplatform};Password=${POSTGRES_PASSWORD:?задайте POSTGRES_PASSWORD}
+      FrontendBaseUrl: ${FRONTEND_BASE_URL:?задайте FRONTEND_BASE_URL — публичный адрес, он попадает в письма}
+      Jwt__SigningKey: ${JWT_SIGNING_KEY:?задайте JWT_SIGNING_KEY (не короче 32 символов)}
+      BootstrapAdmin__Email: ${BOOTSTRAP_ADMIN_EMAIL:-}
+      BootstrapAdmin__Password: ${BOOTSTRAP_ADMIN_PASSWORD:-}
+      Auth__SecureCookies: ${SECURE_COOKIES:-true}
+      Smtp__Host: ${SMTP_HOST:?задайте SMTP_HOST}
+      Smtp__Port: ${SMTP_PORT:-587}
+      Smtp__Security: ${SMTP_SECURITY:-StartTls}
+      Smtp__UserName: ${SMTP_USERNAME:-}
+      Smtp__Password: ${SMTP_PASSWORD:-}
+      Email__FromAddress: ${EMAIL_FROM_ADDRESS:?задайте EMAIL_FROM_ADDRESS}
+      Email__FromName: ${EMAIL_FROM_NAME:-360 Review}
+      Email__TimeZone: ${EMAIL_TIME_ZONE:-Europe/Moscow}
+    restart: unless-stopped
+
+  frontend:
+    restart: unless-stopped
+
+  backup:
+    environment:
+      PGPASSWORD: ${POSTGRES_PASSWORD:?задайте POSTGRES_PASSWORD}
