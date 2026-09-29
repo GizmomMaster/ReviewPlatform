@@ -25,3 +25,6 @@ dotnet_diagnostic.CA1707.severity = none
 
 [*.md]
 trim_trailing_whitespace = false
+
+[backend/src/**/Migrations/*.cs]
+generated_code = true

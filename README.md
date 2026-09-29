@@ -38,7 +38,16 @@ scripts/compose.sh up -d --build
 cd backend
 dotnet build
 dotnet test
-dotnet run --project src/ReviewPlatform.Api   # http://localhost:5080
+dotnet run --project src/ReviewPlatform.Api   # http://localhost:5080, нужен Postgres из compose
+```
+
+При старте API применяет миграции и заполняет справочники и матрицу из `seed/backend-matrix.xlsx` (если матрица пуста). Интеграционные тесты поднимают свой Postgres через Testcontainers — нужен запущенный Docker.
+
+Новая миграция:
+
+```sh
+dotnet tool restore
+dotnet ef migrations add <Name> -p src/ReviewPlatform.Infrastructure -s src/ReviewPlatform.Api -o Persistence/Migrations
 ```
 
 **Frontend** (npm в контейнере Node 22):

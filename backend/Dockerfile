@@ -10,6 +10,7 @@ COPY backend/src/ReviewPlatform.Infrastructure/*.csproj backend/src/ReviewPlatfo
 COPY backend/src/ReviewPlatform.Api/*.csproj backend/src/ReviewPlatform.Api/
 RUN dotnet restore backend/src/ReviewPlatform.Api/ReviewPlatform.Api.csproj
 
+COPY seed/backend-matrix.xlsx seed/
 COPY backend/src/ backend/src/
 RUN dotnet publish backend/src/ReviewPlatform.Api/ReviewPlatform.Api.csproj -c Release -o /app --no-restore
 

@@ -7,5 +7,6 @@
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/ReviewPlatform.Api.Tests/ReviewPlatform.Api.Tests.csproj" />
+    <Project Path="tests/ReviewPlatform.Domain.Tests/ReviewPlatform.Domain.Tests.csproj" />
   </Folder>
 </Solution>

@@ -1,7 +1,10 @@
 import { NavLink, Outlet } from 'react-router'
 import { cn } from '@/lib/utils'
 
-const navItems = [{ to: '/admin', label: 'Сессии', end: true }]
+const navItems = [
+  { to: '/admin', label: 'Сессии', end: true },
+  { to: '/admin/matrix', label: 'Матрица', end: false },
+]
 
 export function AdminLayout() {
   return (

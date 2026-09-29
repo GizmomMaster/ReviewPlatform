@@ -1,17 +1,14 @@
-using System.Net;
-using Microsoft.AspNetCore.Mvc.Testing;
-
 namespace ReviewPlatform.Api.Tests;
 
-public sealed class HealthCheckTests(WebApplicationFactory<Program> factory) : IClassFixture<WebApplicationFactory<Program>>
+public sealed class HealthCheckTests(ApiFactory factory)
 {
     [Fact]
-    public async Task Health_ReturnsOk()
+    public async Task Health_WithDatabase_ReturnsHealthy()
     {
         using var client = factory.CreateClient();
 
-        var response = await client.GetAsync("/health", TestContext.Current.CancellationToken);
+        var body = await client.GetStringAsync("/health", TestContext.Current.CancellationToken);
 
-        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Equal("Healthy", body);
     }
 }
