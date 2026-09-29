@@ -25,7 +25,7 @@ internal sealed class Scenarios(ApiFactory factory)
 
     public static async Task<EmployeeDto> CreateEmployeeAsync(HttpClient client, string gradeCode)
     {
-        var track = (await client.GetFromJsonAsync<List<TrackDto>>("/api/tracks", ApiFactory.Json, Ct))!.Single();
+        var track = (await client.GetFromJsonAsync<List<TrackDto>>("/api/tracks", ApiFactory.Json, Ct))!.Single(t => t.Code == "backend");
         var grade = await GradeAsync(client, gradeCode);
         var response = await client.PostAsJsonAsync("/api/employees",
             new CreateEmployeeCommand("Сотрудник Сценариев", $"emp-{Guid.NewGuid():N}@test.local", track.Id, grade.Id, null), ApiFactory.Json, Ct);

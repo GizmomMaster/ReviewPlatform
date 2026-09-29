@@ -2,6 +2,7 @@ using FluentValidation;
 using Microsoft.Extensions.DependencyInjection;
 using ReviewPlatform.Application.Common;
 using ReviewPlatform.Application.Employees;
+using ReviewPlatform.Application.Matrix;
 using ReviewPlatform.Application.Notifications;
 using ReviewPlatform.Application.Sessions;
 using ReviewPlatform.Application.Surveys;
@@ -27,6 +28,8 @@ public static class DependencyInjection
         services.AddScoped<SurveyLoader>();
         services.AddScoped<IAuditLog, AuditLog>();
         services.AddScoped<SessionNotifier>();
+        services.AddScoped<MatrixEditor>();
+        services.AddScoped<MatrixImportPlanner>();
         return services;
     }
 }

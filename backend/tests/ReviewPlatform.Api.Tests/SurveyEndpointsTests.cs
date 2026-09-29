@@ -140,7 +140,7 @@ public sealed class SurveyEndpointsTests(ApiFactory factory)
     private async Task<(HttpClient Manager, SessionDetailsDto Session, List<ParticipantLinkDto> Links)> LaunchedSessionAsync()
     {
         var (_, manager) = await factory.SignInAsNewUserAsync(Roles.Manager);
-        var track = (await manager.GetFromJsonAsync<List<TrackDto>>("/api/tracks", ApiFactory.Json, Ct))!.Single();
+        var track = (await manager.GetFromJsonAsync<List<TrackDto>>("/api/tracks", ApiFactory.Json, Ct))!.Single(t => t.Code == "backend");
         var grade = (await manager.GetFromJsonAsync<List<GradeDto>>("/api/grades", ApiFactory.Json, Ct))!.Single(g => g.Code == "E3");
         var employee = await (await manager.PostAsJsonAsync("/api/employees",
             new CreateEmployeeCommand("Анкетный Сотрудник", $"emp-{Guid.NewGuid():N}@test.local", track.Id, grade.Id, null), ApiFactory.Json, Ct))

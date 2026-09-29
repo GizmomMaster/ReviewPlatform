@@ -31,7 +31,8 @@ public sealed class MatrixEndpointsTests(ApiFactory factory)
     public async Task GetMatrix_ReturnsSeededBackendMatrix()
     {
         using var client = await factory.SignInAsAdminAsync();
-        var track = Assert.Single((await client.GetFromJsonAsync<List<TrackDto>>("/api/tracks", Json, Ct))!);
+        // Другие тесты заводят свои направления — seed-матрица лежит в «backend»
+        var track = Assert.Single((await client.GetFromJsonAsync<List<TrackDto>>("/api/tracks", Json, Ct))!, t => t.Code == "backend");
 
         var matrix = await client.GetFromJsonAsync<MatrixDto>($"/api/tracks/{track.Id}/matrix", Json, Ct);
 
@@ -74,10 +75,10 @@ public sealed class MatrixEndpointsTests(ApiFactory factory)
 
         await using var scope = factory.Services.CreateAsyncScope();
         var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        var backend = await db.Tracks.SingleAsync(t => t.Code == "backend", Ct);
         Assert.Equal(8, await db.Grades.CountAsync(Ct));
-        Assert.Equal(1, await db.Tracks.CountAsync(Ct));
-        Assert.Equal(7, await db.CompetencyGroups.CountAsync(Ct));
-        Assert.Equal(160, await db.Indicators.CountAsync(Ct));
+        Assert.Equal(7, await db.CompetencyGroups.CountAsync(g => g.TrackId == backend.Id, Ct));
+        Assert.Equal(160, await db.Indicators.CountAsync(i => db.CompetencyGroups.Any(g => g.Id == i.GroupId && g.TrackId == backend.Id), Ct));
         Assert.Equal(6 * 4 + 5 + 4, await db.GradeRoleRules.CountAsync(Ct));
     }
 }

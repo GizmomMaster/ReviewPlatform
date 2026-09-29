@@ -12,6 +12,7 @@ import { IndicatorsTable } from '@/features/reports/IndicatorsTable'
 import { MetricTile } from '@/features/reports/MetricTile'
 import { reportQuery } from '@/features/reports/queries'
 import { SessionStatusBadge } from '@/features/sessions/SessionStatusBadge'
+import { saveDownload } from '@/lib/download'
 
 export function ReportPage() {
   const { id = '' } = useParams()
@@ -40,12 +41,7 @@ export function ReportPage() {
     try {
       const { data, response } = await api.GET('/api/assessment-sessions/{id}/report/export', { params: { path: { id } }, parseAs: 'blob' })
       if (!response.ok || !data) throw new Error()
-      const name = /filename\*=UTF-8''([^;]+)/.exec(response.headers.get('content-disposition') ?? '')?.[1]
-      const link = document.createElement('a')
-      link.href = URL.createObjectURL(data)
-      link.download = name ? decodeURIComponent(name) : 'report.xlsx'
-      link.click()
-      URL.revokeObjectURL(link.href)
+      saveDownload(data, response, 'report.xlsx')
     } catch {
       toast.error('Не удалось выгрузить отчёт')
     } finally {

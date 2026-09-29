@@ -24,7 +24,14 @@ public sealed class Indicator : Entity
     public int Order { get; private set; }
     public bool IsArchived { get; private set; }
 
-    internal static string NormalizeText(string text)
+    internal void SetText(string normalizedText) => Text = normalizedText;
+
+    internal void SetOrder(int order) => Order = order;
+
+    internal void Archive() => IsArchived = true;
+
+    /// <summary>Схлопывает пробелы и переводы строк; ограничивает длину.</summary>
+    public static string NormalizeText(string text)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(text);
         var normalized = string.Join(' ', text.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries));

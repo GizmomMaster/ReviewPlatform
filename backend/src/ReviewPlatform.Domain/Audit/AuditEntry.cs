@@ -45,4 +45,5 @@ public static class AuditActions
     public const string ParticipantRemoved = "participant.removed";
     public const string LinkReissued = "participant.link_reissued";
     public const string InviteResent = "participant.invite_resent";
+    public const string MatrixImported = "matrix.imported";
 }

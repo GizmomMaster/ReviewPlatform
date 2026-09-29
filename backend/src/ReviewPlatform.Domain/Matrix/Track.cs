@@ -19,6 +19,8 @@ public sealed class Track : Entity
     public string Name { get; private set; } = null!;
     public bool IsActive { get; private set; }
 
+    public void SetActive(bool isActive) => IsActive = isActive;
+
     public void Rename(string name)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(name);

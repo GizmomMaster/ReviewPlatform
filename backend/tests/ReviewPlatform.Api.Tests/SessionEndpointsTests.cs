@@ -188,7 +188,7 @@ public sealed class SessionEndpointsTests(ApiFactory factory)
 
     private static async Task<EmployeeDto> CreateEmployeeAsync(HttpClient client, string gradeCode)
     {
-        var track = (await client.GetFromJsonAsync<List<TrackDto>>("/api/tracks", ApiFactory.Json, Ct))!.Single();
+        var track = (await client.GetFromJsonAsync<List<TrackDto>>("/api/tracks", ApiFactory.Json, Ct))!.Single(t => t.Code == "backend");
         var grade = (await client.GetFromJsonAsync<List<GradeDto>>("/api/grades", ApiFactory.Json, Ct))!.Single(g => g.Code == gradeCode);
         var response = await client.PostAsJsonAsync("/api/employees",
             new CreateEmployeeCommand("Оцениваемый Сотрудник", $"emp-{Guid.NewGuid():N}@test.local", track.Id, grade.Id, null), ApiFactory.Json, Ct);

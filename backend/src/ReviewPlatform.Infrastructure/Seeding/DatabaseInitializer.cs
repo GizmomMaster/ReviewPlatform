@@ -4,6 +4,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Npgsql;
 using ReviewPlatform.Application.Common;
+using ReviewPlatform.Application.Matrix;
 using ReviewPlatform.Domain.Matrix;
 using ReviewPlatform.Infrastructure.Identity;
 using ReviewPlatform.Infrastructure.Persistence;
@@ -19,6 +20,7 @@ namespace ReviewPlatform.Infrastructure.Seeding;
 /// </summary>
 public sealed partial class DatabaseInitializer(
     AppDbContext db,
+    IMatrixSpreadsheet spreadsheet,
     IOptions<SeedOptions> options,
     IOptions<BootstrapAdminOptions> adminOptions,
     RoleManager<IdentityRole<Guid>> roles,
@@ -113,30 +115,18 @@ public sealed partial class DatabaseInitializer(
         MatrixReadResult result;
         await using (var stream = File.OpenRead(path))
         {
-            result = MatrixSpreadsheet.Read(stream);
+            result = spreadsheet.Read(stream);
         }
 
-        var unknownGrades = result.Rows.Select(r => r.GradeCode).Distinct().Where(c => !grades.ContainsKey(c)).ToList();
-        var foreignTracks = result.Rows.Select(r => r.TrackCode).Distinct().Where(c => c != track.Code).ToList();
-        if (result.Errors.Count > 0 || unknownGrades.Count > 0 || foreignTracks.Count > 0)
+        // Начальная матрица — тот же импорт, что и из админки, в пустое направление
+        var plan = MatrixImportPlan.Create(track, [.. grades.Values], [], result.Rows);
+        if (result.Errors.Count > 0 || !plan.IsValid)
         {
-            var problems = result.Errors
-                .Concat(unknownGrades.Select(c => $"Неизвестный грейд {c}."))
-                .Concat(foreignTracks.Select(c => $"Неожиданное направление {c}."));
-            throw new InvalidOperationException($"Начальная матрица {path} содержит ошибки:{Environment.NewLine}{string.Join(Environment.NewLine, problems)}");
+            throw new InvalidOperationException(
+                $"Начальная матрица {path} содержит ошибки:{Environment.NewLine}{string.Join(Environment.NewLine, result.Errors.Concat(plan.Errors))}");
         }
 
-        foreach (var groupRows in result.Rows.GroupBy(r => (r.GroupName, r.GroupOrder)).OrderBy(g => g.Key.GroupOrder))
-        {
-            var group = new CompetencyGroup(track.Id, groupRows.Key.GroupName, groupRows.Key.GroupOrder);
-            foreach (var row in groupRows)
-            {
-                group.AddIndicator(grades[row.GradeCode].Id, row.Text, row.Order);
-            }
-
-            db.CompetencyGroups.Add(group);
-        }
-
+        db.CompetencyGroups.AddRange(plan.Apply());
         await db.SaveChangesAsync(cancellationToken);
         LogMatrixSeeded(result.Rows.Count, track.Code);
     }

@@ -94,7 +94,7 @@ public sealed class EmployeeEndpointsTests(ApiFactory factory)
 
     private static async Task<(Guid TrackId, Guid GradeId)> TrackAndGradeAsync(HttpClient client)
     {
-        var track = (await client.GetFromJsonAsync<List<TrackDto>>("/api/tracks", ApiFactory.Json, Ct))!.Single();
+        var track = (await client.GetFromJsonAsync<List<TrackDto>>("/api/tracks", ApiFactory.Json, Ct))!.Single(t => t.Code == "backend");
         var grade = (await client.GetFromJsonAsync<List<GradeDto>>("/api/grades", ApiFactory.Json, Ct))!.First(g => g.Code == "E3");
         return (track.Id, grade.Id);
     }

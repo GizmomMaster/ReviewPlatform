@@ -189,7 +189,7 @@ export interface paths {
         };
         get: operations["GetTracks"];
         put?: never;
-        post?: never;
+        post: operations["CreateTrack"];
         delete?: never;
         options?: never;
         head?: never;
@@ -236,8 +236,216 @@ export interface paths {
             cookie?: never;
         };
         get: operations["GetGradeRoleRules"];
+        put: operations["UpdateGradeRoleRules"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/tracks/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put: operations["UpdateTrack"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/grades/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put: operations["RenameGrade"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/tracks/{trackId}/matrix/import/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["PreviewMatrixImport"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/tracks/{trackId}/matrix/import/{importId}/apply": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["ApplyMatrixImport"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/tracks/{trackId}/matrix/export": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["ExportMatrix"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/matrix/import-template": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["GetMatrixImportTemplate"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/competency-groups": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["CreateCompetencyGroup"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/competency-groups/reorder": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put: operations["ReorderCompetencyGroups"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/competency-groups/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put: operations["UpdateCompetencyGroup"];
+        post?: never;
+        delete: operations["DeleteCompetencyGroup"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/indicators": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["CreateIndicator"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/indicators/reorder": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put: operations["ReorderIndicators"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/indicators/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put: operations["UpdateIndicator"];
+        post?: never;
+        delete: operations["DeleteIndicator"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/indicators/{id}/archive": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["ArchiveIndicator"];
         delete?: never;
         options?: never;
         head?: never;
@@ -591,6 +799,19 @@ export interface components {
             /** Format: uuid */
             managerUserId: null | string;
         };
+        CreateGroupRequest: {
+            /** Format: uuid */
+            trackId: string;
+            name: string;
+            description: null | string;
+        };
+        CreateIndicatorRequest: {
+            /** Format: uuid */
+            groupId: string;
+            /** Format: uuid */
+            gradeId: string;
+            text: string;
+        };
         CreateSessionCommand: {
             /** Format: uuid */
             employeeId: string;
@@ -598,6 +819,10 @@ export interface components {
             /** Format: date-time */
             deadlineAtUtc: string;
             participants: components["schemas"]["NewParticipant"][];
+        };
+        CreateTrackRequest: {
+            code: string;
+            name: string;
         };
         CreateUserCommand: {
             email: string;
@@ -679,6 +904,17 @@ export interface components {
             /** Format: int32 */
             maxCount: number;
         };
+        GradeRoleRuleInput: {
+            /** Format: uuid */
+            gradeId: string;
+            role: components["schemas"]["EvaluatorRole"];
+            /** Format: int32 */
+            minCount: number;
+            /** Format: int32 */
+            maxCount: number;
+        };
+        /** Format: binary */
+        IFormFile: string;
         IndicatorDto: {
             /** Format: uuid */
             id: string;
@@ -706,10 +942,40 @@ export interface components {
             email: string;
             password: string;
         };
+        MatrixChange: {
+            kind: components["schemas"]["MatrixChangeKind"];
+            groupName: string;
+            gradeCode: null | string;
+            text: null | string;
+            details: null | string;
+        };
+        /** @enum {unknown} */
+        MatrixChangeKind: "GroupAdded" | "GroupChanged" | "IndicatorAdded" | "IndicatorChanged" | "IndicatorArchived";
         MatrixDto: {
             track: components["schemas"]["TrackDto"];
             grades: components["schemas"]["GradeDto"][];
             groups: components["schemas"]["CompetencyGroupDto"][];
+        };
+        MatrixImportPreviewDto: {
+            /** Format: uuid */
+            importId: null | string;
+            errors: string[];
+            summary: components["schemas"]["MatrixImportSummaryDto"];
+            changes: components["schemas"]["MatrixChange"][];
+        };
+        MatrixImportSummaryDto: {
+            /** Format: int32 */
+            groupsAdded: number;
+            /** Format: int32 */
+            groupsChanged: number;
+            /** Format: int32 */
+            indicatorsAdded: number;
+            /** Format: int32 */
+            indicatorsChanged: number;
+            /** Format: int32 */
+            indicatorsArchived: number;
+            /** Format: int32 */
+            indicatorsUnchanged: number;
         };
         NewParticipant: {
             fullName: string;
@@ -754,6 +1020,21 @@ export interface components {
             text: string;
             gradeCode: string;
             levelKind: components["schemas"]["LevelKind"];
+        };
+        RenameGradeRequest: {
+            name: string;
+        };
+        ReorderGroupsRequest: {
+            /** Format: uuid */
+            trackId: string;
+            groupIds: string[];
+        };
+        ReorderIndicatorsRequest: {
+            /** Format: uuid */
+            groupId: string;
+            /** Format: uuid */
+            gradeId: string;
+            indicatorIds: string[];
         };
         ReportGroupDto: {
             name: string;
@@ -955,10 +1236,21 @@ export interface components {
             managerUserId: null | string;
             isActive: boolean;
         };
+        UpdateGroupRequest: {
+            name: string;
+            description: null | string;
+        };
+        UpdateIndicatorRequest: {
+            text: string;
+        };
         UpdateSessionRequest: {
             type: components["schemas"]["SessionType"];
             /** Format: date-time */
             deadlineAtUtc: string;
+        };
+        UpdateTrackRequest: {
+            name: string;
+            isActive: boolean;
         };
         UpdateUserRequest: {
             fullName: string;
@@ -1340,6 +1632,30 @@ export interface operations {
             };
         };
     };
+    CreateTrack: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateTrackRequest"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TrackDto"];
+                };
+            };
+        };
+    };
     GetGrades: {
         parameters: {
             query?: never;
@@ -1406,6 +1722,384 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["GradeRoleRuleDto"][];
                 };
+            };
+        };
+    };
+    UpdateGradeRoleRules: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["GradeRoleRuleInput"][];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GradeRoleRuleDto"][];
+                };
+            };
+        };
+    };
+    UpdateTrack: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateTrackRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TrackDto"];
+                };
+            };
+        };
+    };
+    RenameGrade: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RenameGradeRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GradeDto"];
+                };
+            };
+        };
+    };
+    PreviewMatrixImport: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                trackId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": {
+                    file: components["schemas"]["IFormFile"];
+                };
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MatrixImportPreviewDto"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": string;
+                };
+            };
+        };
+    };
+    ApplyMatrixImport: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                trackId: string;
+                importId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MatrixImportSummaryDto"];
+                };
+            };
+        };
+    };
+    ExportMatrix: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                trackId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    GetMatrixImportTemplate: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    CreateCompetencyGroup: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateGroupRequest"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CompetencyGroupDto"];
+                };
+            };
+        };
+    };
+    ReorderCompetencyGroups: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReorderGroupsRequest"];
+            };
+        };
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    UpdateCompetencyGroup: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateGroupRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CompetencyGroupDto"];
+                };
+            };
+        };
+    };
+    DeleteCompetencyGroup: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    CreateIndicator: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateIndicatorRequest"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["IndicatorDto"];
+                };
+            };
+        };
+    };
+    ReorderIndicators: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReorderIndicatorsRequest"];
+            };
+        };
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    UpdateIndicator: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateIndicatorRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["IndicatorDto"];
+                };
+            };
+        };
+    };
+    DeleteIndicator: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    ArchiveIndicator: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };

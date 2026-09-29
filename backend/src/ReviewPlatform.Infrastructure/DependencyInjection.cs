@@ -3,11 +3,13 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using ReviewPlatform.Application.Common;
+using ReviewPlatform.Application.Matrix;
 using ReviewPlatform.Application.Notifications;
 using ReviewPlatform.Application.Reports;
 using ReviewPlatform.Domain.Assessments.Reporting;
 using ReviewPlatform.Infrastructure.Email;
 using ReviewPlatform.Infrastructure.Identity;
+using ReviewPlatform.Infrastructure.Matrix;
 using ReviewPlatform.Infrastructure.Persistence;
 using ReviewPlatform.Infrastructure.Reports;
 using ReviewPlatform.Infrastructure.Scheduling;
@@ -53,6 +55,9 @@ public static class DependencyInjection
         services.AddSingleton<IAppLinks, AppLinks>();
         services.AddSingleton(configuration.GetSection(ReportPolicy.SectionName).Get<ReportPolicy>() ?? new ReportPolicy());
         services.AddSingleton<IReportExporter, ReportExcelExporter>();
+        services.AddSingleton<IMatrixSpreadsheet, MatrixSpreadsheet>();
+        services.AddMemoryCache();
+        services.AddSingleton<IMatrixImportStore, MatrixImportStore>();
         services.AddSingleton(configuration.GetSection(NotificationPolicy.SectionName).Get<NotificationPolicy>() ?? new NotificationPolicy());
 
         services.Configure<EmailOptions>(configuration.GetSection(EmailOptions.SectionName));
