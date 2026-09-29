@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Http.HttpResults;
 using ReviewPlatform.Api.Auth;
+using ReviewPlatform.Api.Infrastructure;
 using ReviewPlatform.Application.Common;
 using ReviewPlatform.Infrastructure.Identity;
 
@@ -22,6 +23,7 @@ internal static class AuthEndpoints
                 ? TypedResults.Ok(Respond(http, tokens))
                 : TypedResults.Problem(title: "Неверный email или пароль", statusCode: StatusCodes.Status401Unauthorized))
             .AllowAnonymous()
+            .RequireRateLimiting(RateLimits.Login)
             .WithName("Login");
 
         auth.MapPost("/refresh", async Task<Results<Ok<AuthResponse>, ProblemHttpResult>> (AuthService service, HttpContext http, CancellationToken ct) =>

@@ -46,6 +46,12 @@ public sealed class AssessmentSession : Entity
     public DateTime? CompletedAtUtc { get; private set; }
     public DateTime? ClosedAtUtc { get; private set; }
 
+    /// <summary>
+    /// Меняется при каждой отправке анкеты: так параллельные отправки последних респондентов конфликтуют
+    /// по версии строки сессии, и повтор одной из них увидит все отправки и завершит сессию.
+    /// </summary>
+    public DateTime? LastSubmissionAtUtc { get; private set; }
+
     /// <summary>Токен оптимистической блокировки (xmin в PostgreSQL).</summary>
     public uint Version { get; private set; }
 
@@ -161,6 +167,85 @@ public sealed class AssessmentSession : Entity
 
     public void EnsureCanDelete() => EnsureStatus("удалить", SessionStatus.Draft);
 
+    /// <summary>Анкета принимает ответы: опрос идёт и дедлайн не наступил.</summary>
+    public bool AcceptsAnswers(DateTime nowUtc) => Status == SessionStatus.InProgress && nowUtc <= DeadlineAtUtc;
+
+    public void OpenSurvey(Participant participant, DateTime nowUtc)
+    {
+        if (AcceptsAnswers(nowUtc) && participant.Status is ParticipantStatus.Pending)
+        {
+            participant.MarkOpened(nowUtc);
+        }
+    }
+
+    /// <summary>Автосохранение: частичный набор ответов.</summary>
+    public void SaveDraft(Participant participant, IReadOnlyCollection<AnswerInput> answers, DateTime nowUtc)
+    {
+        EnsureAcceptsAnswers(participant, nowUtc);
+        EnsureKnownIndicators(answers);
+        participant.SaveAnswers(answers, nowUtc);
+    }
+
+    /// <summary>Финальная отправка: все индикаторы отвечены, комментарии к 0 и 3 заполнены.</summary>
+    /// <returns>Ошибки по индикаторам; пустой список — анкета принята.</returns>
+    public IReadOnlyList<SurveyAnswerError> Submit(Participant participant, IReadOnlyCollection<AnswerInput> answers, DateTime nowUtc)
+    {
+        EnsureAcceptsAnswers(participant, nowUtc);
+        EnsureKnownIndicators(answers);
+        participant.SaveAnswers(answers, nowUtc);
+
+        var byIndicator = participant.Answers.ToDictionary(a => a.SessionIndicatorId);
+        var errors = new List<SurveyAnswerError>();
+        foreach (var indicator in _indicators)
+        {
+            if (!byIndicator.TryGetValue(indicator.Id, out var answer) || !answer.IsAnswered)
+            {
+                errors.Add(new SurveyAnswerError(indicator.Id, "Выберите оценку или «Не могу оценить»."));
+            }
+            else if (answer.RequiresComment && answer.Comment is null)
+            {
+                errors.Add(new SurveyAnswerError(indicator.Id, "Для оценок 0 и 3 приведите пример в комментарии."));
+            }
+        }
+
+        if (errors.Count > 0)
+        {
+            return errors;
+        }
+
+        participant.MarkSubmitted(nowUtc);
+        LastSubmissionAtUtc = nowUtc;
+        if (_participants.Where(p => p.IsActive).All(p => p.Status == ParticipantStatus.Submitted))
+        {
+            Status = SessionStatus.AwaitingDecision;
+            CompletedAtUtc = nowUtc;
+        }
+
+        return [];
+    }
+
+    private void EnsureAcceptsAnswers(Participant participant, DateTime nowUtc)
+    {
+        if (!participant.IsActive || participant.Status == ParticipantStatus.Submitted)
+        {
+            throw new DomainException("Анкета уже отправлена или ссылка больше не действует.");
+        }
+
+        if (!AcceptsAnswers(nowUtc))
+        {
+            throw new DomainException("Опрос завершён: ответы больше не принимаются.");
+        }
+    }
+
+    private void EnsureKnownIndicators(IEnumerable<AnswerInput> answers)
+    {
+        var known = _indicators.Select(i => i.Id).ToHashSet();
+        if (answers.Any(a => !known.Contains(a.IndicatorId)))
+        {
+            throw new DomainException("Ответ относится к индикатору не из этой анкеты.");
+        }
+    }
+
     private Participant ActiveParticipant(Guid participantId) =>
         _participants.SingleOrDefault(p => p.Id == participantId && p.IsActive)
             ?? throw new DomainException("Респондент не найден в сессии.");
@@ -181,6 +266,8 @@ public sealed class AssessmentSession : Entity
         }
     }
 }
+
+public sealed record SurveyAnswerError(Guid IndicatorId, string Message);
 
 /// <summary>Тип сессии с целевым грейдом. Создаётся через <see cref="For"/>, который проверяет допустимость.</summary>
 public sealed record SessionPlan(SessionType Type, Guid? TargetGradeId)

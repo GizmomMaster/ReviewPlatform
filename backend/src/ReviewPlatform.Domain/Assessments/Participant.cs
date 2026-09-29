@@ -5,6 +5,8 @@ namespace ReviewPlatform.Domain.Assessments;
 
 public sealed class Participant : Entity
 {
+    private readonly List<SurveyAnswer> _answers = [];
+
     private Participant() { }
 
     internal Participant(Guid sessionId, string fullName, string email, EvaluatorRole role)
@@ -29,8 +31,43 @@ public sealed class Participant : Entity
     public DateTime? SubmittedAtUtc { get; private set; }
     public DateTime? LastReminderAtUtc { get; private set; }
 
+    /// <summary>Ответы; загружаются только когда нужны (анкета, отчёт).</summary>
+    public IReadOnlyCollection<SurveyAnswer> Answers => _answers;
+
     /// <summary>Участвует в сессии (не удалён).</summary>
     public bool IsActive => Status != ParticipantStatus.Removed;
+
+    internal void MarkOpened(DateTime nowUtc)
+    {
+        FirstOpenedAtUtc ??= nowUtc;
+        if (Status == ParticipantStatus.Pending)
+        {
+            Status = ParticipantStatus.InProgress;
+        }
+    }
+
+    internal void SaveAnswers(IEnumerable<AnswerInput> inputs, DateTime nowUtc)
+    {
+        foreach (var input in inputs)
+        {
+            var answer = _answers.SingleOrDefault(a => a.SessionIndicatorId == input.IndicatorId);
+            if (answer is null)
+            {
+                answer = new SurveyAnswer(Id, input.IndicatorId);
+                _answers.Add(answer);
+            }
+
+            answer.Set(input, nowUtc);
+        }
+
+        MarkOpened(nowUtc);
+    }
+
+    internal void MarkSubmitted(DateTime nowUtc)
+    {
+        Status = ParticipantStatus.Submitted;
+        SubmittedAtUtc = nowUtc;
+    }
 
     internal AccessToken IssueToken(DateTime nowUtc)
     {

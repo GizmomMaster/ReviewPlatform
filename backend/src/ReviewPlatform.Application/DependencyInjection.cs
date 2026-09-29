@@ -3,6 +3,7 @@ using Microsoft.Extensions.DependencyInjection;
 using ReviewPlatform.Application.Common;
 using ReviewPlatform.Application.Employees;
 using ReviewPlatform.Application.Sessions;
+using ReviewPlatform.Application.Surveys;
 
 namespace ReviewPlatform.Application;
 
@@ -22,6 +23,7 @@ public static class DependencyInjection
         services.AddScoped<SessionAccess>();
         services.AddScoped<SessionReader>();
         services.AddScoped<IndicatorSnapshotBuilder>();
+        services.AddScoped<SurveyLoader>();
         return services;
     }
 }

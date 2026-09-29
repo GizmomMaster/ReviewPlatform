@@ -40,6 +40,20 @@ internal sealed class ParticipantConfiguration : IEntityTypeConfiguration<Partic
         builder.Property(p => p.TokenHash).HasMaxLength(64);
         builder.HasIndex(p => p.TokenHash).IsUnique().HasFilter("token_hash IS NOT NULL");
         builder.Ignore(p => p.IsActive);
+        builder.HasMany(p => p.Answers).WithOne().HasForeignKey(a => a.ParticipantId).OnDelete(DeleteBehavior.Cascade);
+        builder.Navigation(p => p.Answers).HasField("_answers");
+    }
+}
+
+internal sealed class SurveyAnswerConfiguration : IEntityTypeConfiguration<SurveyAnswer>
+{
+    public void Configure(EntityTypeBuilder<SurveyAnswer> builder)
+    {
+        builder.Property(a => a.Comment).HasMaxLength(SurveyAnswer.MaxCommentLength);
+        builder.HasIndex(a => new { a.ParticipantId, a.SessionIndicatorId }).IsUnique();
+        builder.HasOne<SessionIndicator>().WithMany().HasForeignKey(a => a.SessionIndicatorId).OnDelete(DeleteBehavior.Cascade);
+        builder.Ignore(a => a.IsAnswered);
+        builder.Ignore(a => a.RequiresComment);
     }
 }
 

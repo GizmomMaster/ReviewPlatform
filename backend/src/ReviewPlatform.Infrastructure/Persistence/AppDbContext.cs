@@ -22,6 +22,7 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options)
     public DbSet<AssessmentSession> AssessmentSessions => Set<AssessmentSession>();
     public DbSet<Participant> Participants => Set<Participant>();
     public DbSet<SessionIndicator> SessionIndicators => Set<SessionIndicator>();
+    public DbSet<SurveyAnswer> SurveyAnswers => Set<SurveyAnswer>();
     public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
 
     protected override void OnModelCreating(ModelBuilder builder)

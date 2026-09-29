@@ -356,6 +356,54 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/surveys/{token}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["GetSurvey"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/surveys/{token}/draft": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put: operations["SaveSurveyDraft"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/surveys/{token}/submit": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["SubmitSurvey"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -583,11 +631,43 @@ export interface components {
         SessionStatus: "Draft" | "InProgress" | "Overdue" | "AwaitingDecision" | "Closed" | "Cancelled";
         /** @enum {unknown} */
         SessionType: "Transition" | "Confirmation";
+        SurveyAnswerDto: {
+            /** Format: uuid */
+            indicatorId: string;
+            /** Format: int32 */
+            score: null | number;
+            notApplicable: boolean;
+            comment: null | string;
+        };
+        SurveyAnswersRequest: {
+            answers: components["schemas"]["SurveyAnswerDto"][];
+        };
+        SurveyDto: {
+            state: components["schemas"]["SurveyState"];
+            employeeName: string;
+            respondentName: string;
+            role: components["schemas"]["EvaluatorRole"];
+            /** Format: date-time */
+            deadlineAtUtc: string;
+            groups: components["schemas"]["SurveyGroupDto"][];
+            answers: components["schemas"]["SurveyAnswerDto"][];
+        };
+        SurveyGroupDto: {
+            name: string;
+            indicators: components["schemas"]["SurveyIndicatorDto"][];
+        };
+        SurveyIndicatorDto: {
+            /** Format: uuid */
+            id: string;
+            text: string;
+        };
         SurveyPreviewDto: {
             /** Format: int32 */
             indicatorCount: number;
             groups: components["schemas"]["PreviewGroupDto"][];
         };
+        /** @enum {unknown} */
+        SurveyState: "Open" | "Submitted" | "Closed";
         TrackDto: {
             /** Format: uuid */
             id: string;
@@ -1284,6 +1364,76 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["ParticipantLinkDto"];
                 };
+            };
+        };
+    };
+    GetSurvey: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                token: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SurveyDto"];
+                };
+            };
+        };
+    };
+    SaveSurveyDraft: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                token: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SurveyAnswersRequest"];
+            };
+        };
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    SubmitSurvey: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                token: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SurveyAnswersRequest"];
+            };
+        };
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };

@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.ChangeTracking;
 using ReviewPlatform.Domain.Assessments;
 using ReviewPlatform.Domain.Employees;
 using ReviewPlatform.Domain.Matrix;
@@ -16,6 +17,9 @@ public interface IAppDbContext
     DbSet<AssessmentSession> AssessmentSessions { get; }
     DbSet<Participant> Participants { get; }
     DbSet<SessionIndicator> SessionIndicators { get; }
+    DbSet<SurveyAnswer> SurveyAnswers { get; }
+
+    ChangeTracker ChangeTracker { get; }
 
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 }

@@ -107,7 +107,7 @@
    * `Confirmation` — только индикаторы текущего грейда (для E7 и E8 по умолчанию; для E8 — единственный вариант).
 9. **SessionIndicator** — **снимок** индикатора на момент запуска: `Id`, `SessionId`, `SourceIndicatorId` (nullable), `GroupName`, `GroupOrder`, `GradeCode`, `LevelKind` (`Current` | `Target`), `Text`, `Order`. Изменения матрицы после запуска не влияют на запущенные сессии.
 10. **Participant** — `Id`, `SessionId`, `FullName`, `Email`, `Role`, `TokenHash` (SHA-256, unique index), `TokenIssuedAtUtc`, `Status` (`Pending` | `InProgress` | `Submitted` | `Removed`), `FirstOpenedAtUtc`, `SubmittedAtUtc`, `LastReminderAtUtc`.
-11. **SurveyAnswer** — `Id`, `ParticipantId`, `SessionIndicatorId`, `Score` (`int?`: 0–3; `null` = «Не могу оценить»), `Comment`, `UpdatedAtUtc`. Уникальность (ParticipantId, SessionIndicatorId). Черновик и финальные ответы хранятся в одной таблице; финальность определяется `Participant.Status == Submitted`.
+11. **SurveyAnswer** — `Id`, `ParticipantId`, `SessionIndicatorId`, `Score` (`int?`: 0–3), `NotApplicable` (`bool`, «Не могу оценить»), `Comment`, `UpdatedAtUtc`. Ответ считается данным, если есть `Score` или `NotApplicable`; отдельный флаг нужен, чтобы в черновике отличать «ещё не ответил» от «не могу оценить». Уникальность (ParticipantId, SessionIndicatorId). Черновик и финальные ответы хранятся в одной таблице; финальность определяется `Participant.Status == Submitted`.
 12. **AssessmentDecision** — `Id`, `SessionId` (unique), `DecidedByUserId`, `Outcome` (`Promoted` | `GradeConfirmed` | `NotConfirmed`), `NewGradeId`, `Comment` (обязательный), `DecidedAtUtc`.
 13. **DevelopmentPlanItem** — `Id`, `DecisionId`, `SessionIndicatorId` (nullable — пункт может быть произвольным), `Text`, `DueDate` (nullable), `Order`.
 14. **EmailOutbox** — `Id`, `Type`, `To`, `Subject`, `Body`, `Status` (`Pending` | `Sent` | `Failed`), `Attempts`, `NextAttemptAtUtc`, `LastError`, `CreatedAtUtc`, `SentAtUtc`.
@@ -321,7 +321,7 @@ Draft / InProgress / Overdue ──cancel──▶ Cancelled
 ### 10.1 Безопасность
 * Токен респондента — 32 байта из `RandomNumberGenerator`, base64url. В БД хранится только SHA-256-хеш.
 * Токен действителен, пока сессия в `InProgress` и участник не `Submitted` / `Removed`.
-* Rate limiting на `/api/surveys/*` (например, 30 запросов в минуту с IP) и на `/api/auth/login`.
+* Rate limiting на `/api/surveys/*` (120 запросов в минуту с IP — с учётом автосохранения) и на `/api/auth/login` (10 в минуту с IP).
 * Проверка прав Manager на уровне Application-слоя (доступ только к своим сотрудникам и сессиям); запрос к чужой сессии → 404.
 * CORS только для домена фронтенда. Секреты — только через переменные окружения.
 * Журнал аудита ключевых действий (запуск, отмена, продление, перевыпуск ссылки, решение): кто, когда, что.

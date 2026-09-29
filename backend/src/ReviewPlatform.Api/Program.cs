@@ -13,6 +13,7 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddApplication();
 builder.Services.AddInfrastructure(builder.Configuration);
 builder.Services.AddApiAuth();
+builder.Services.AddApiRateLimits(builder.Configuration);
 
 builder.Services.ConfigureHttpJsonOptions(options =>
 {
@@ -35,6 +36,7 @@ app.UseStatusCodePages();
 app.UseCors(FrontendCorsPolicy);
 app.UseAuthentication();
 app.UseAuthorization();
+app.UseRateLimiter();
 
 if (app.Environment.IsDevelopment())
 {
@@ -48,6 +50,7 @@ app.MapUserEndpoints();
 app.MapEmployeeEndpoints();
 app.MapMatrixEndpoints();
 app.MapSessionEndpoints();
+app.MapSurveyEndpoints();
 
 await app.Services.InitializeDatabaseAsync();
 await app.RunAsync();
