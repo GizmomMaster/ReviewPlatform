@@ -38,7 +38,11 @@ public static class AuditActions
     public const string SessionClosedEarly = "session.closed_early";
     public const string SessionDraftDeleted = "session.draft_deleted";
     public const string SessionDecided = "session.decided";
+    public const string SessionExtended = "session.extended";
+    public const string SessionOverdue = "session.overdue";
+    public const string RemindersSent = "session.reminders_sent";
     public const string ParticipantAdded = "participant.added";
     public const string ParticipantRemoved = "participant.removed";
     public const string LinkReissued = "participant.link_reissued";
+    public const string InviteResent = "participant.invite_resent";
 }

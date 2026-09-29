@@ -4,6 +4,7 @@ using ReviewPlatform.Domain.Assessments;
 using ReviewPlatform.Domain.Audit;
 using ReviewPlatform.Domain.Employees;
 using ReviewPlatform.Domain.Matrix;
+using ReviewPlatform.Domain.Notifications;
 
 namespace ReviewPlatform.Application.Common;
 
@@ -21,6 +22,7 @@ public interface IAppDbContext
     DbSet<SurveyAnswer> SurveyAnswers { get; }
     DbSet<AssessmentDecision> AssessmentDecisions { get; }
     DbSet<AuditEntry> AuditEntries { get; }
+    DbSet<OutboxEmail> EmailOutbox { get; }
 
     ChangeTracker ChangeTracker { get; }
 

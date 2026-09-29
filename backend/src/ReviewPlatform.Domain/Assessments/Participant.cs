@@ -31,6 +31,9 @@ public sealed class Participant : Entity
     public DateTime? SubmittedAtUtc { get; private set; }
     public DateTime? LastReminderAtUtc { get; private set; }
 
+    /// <summary>Токен оптимистической блокировки (xmin): отправка анкеты и напоминание не перезапишут друг друга.</summary>
+    public uint Version { get; private set; }
+
     /// <summary>Ответы; загружаются только когда нужны (анкета, отчёт).</summary>
     public IReadOnlyCollection<SurveyAnswer> Answers => _answers;
 
@@ -75,6 +78,12 @@ public sealed class Participant : Entity
         TokenHash = token.Hash;
         TokenIssuedAtUtc = nowUtc;
         return token;
+    }
+
+    internal AccessToken IssueReminderToken(DateTime nowUtc)
+    {
+        LastReminderAtUtc = nowUtc;
+        return IssueToken(nowUtc);
     }
 
     internal void Remove()

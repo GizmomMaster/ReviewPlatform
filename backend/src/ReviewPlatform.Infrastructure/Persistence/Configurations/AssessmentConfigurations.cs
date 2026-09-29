@@ -12,6 +12,7 @@ internal sealed class AssessmentSessionConfiguration : IEntityTypeConfiguration<
     public void Configure(EntityTypeBuilder<AssessmentSession> builder)
     {
         builder.Property(s => s.Version).IsRowVersion(); // xmin
+        builder.Ignore(s => s.PendingParticipants);
 
         builder.HasOne<Employee>().WithMany().HasForeignKey(s => s.EmployeeId).OnDelete(DeleteBehavior.Restrict);
         builder.HasOne<Track>().WithMany().HasForeignKey(s => s.TrackId).OnDelete(DeleteBehavior.Restrict);
@@ -58,6 +59,7 @@ internal sealed class ParticipantConfiguration : IEntityTypeConfiguration<Partic
 {
     public void Configure(EntityTypeBuilder<Participant> builder)
     {
+        builder.Property(p => p.Version).IsRowVersion(); // xmin
         builder.Property(p => p.FullName).HasMaxLength(200);
         builder.Property(p => p.Email).HasMaxLength(256);
         builder.Property(p => p.TokenHash).HasMaxLength(64);

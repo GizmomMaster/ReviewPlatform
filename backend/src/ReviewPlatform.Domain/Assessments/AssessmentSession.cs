@@ -160,6 +160,49 @@ public sealed class AssessmentSession : Entity
         return participant.IssueToken(nowUtc);
     }
 
+    /// <summary>Не отправившие анкету респонденты: им уходят напоминания и письма о продлении.</summary>
+    public IEnumerable<Participant> PendingParticipants => _participants.Where(p => p.IsActive && p.Status != ParticipantStatus.Submitted);
+
+    /// <summary>Дедлайн прошёл, а опрос не завершён: ответы больше не принимаются.</summary>
+    /// <returns>true, если статус изменился (повторный вызов ничего не делает).</returns>
+    public bool MarkOverdue(DateTime nowUtc)
+    {
+        if (Status != SessionStatus.InProgress || nowUtc <= DeadlineAtUtc)
+        {
+            return false;
+        }
+
+        Status = SessionStatus.Overdue;
+        return true;
+    }
+
+    /// <summary>Новый дедлайн идущего или просроченного опроса; просроченный снова принимает ответы.</summary>
+    /// <returns>Новые токены не отправивших анкету — ссылки уходят им в письме о продлении.</returns>
+    public IReadOnlyDictionary<Guid, AccessToken> Extend(DateTime newDeadlineAtUtc, DateTime nowUtc)
+    {
+        EnsureStatus("продлить опрос", SessionStatus.InProgress, SessionStatus.Overdue);
+        EnsureFutureDeadline(newDeadlineAtUtc, nowUtc);
+        DeadlineAtUtc = newDeadlineAtUtc;
+        Status = SessionStatus.InProgress;
+        return PendingParticipants.ToDictionary(p => p.Id, p => p.IssueToken(nowUtc));
+    }
+
+    /// <summary>
+    /// Напоминания тем, кто ещё не отправил анкету (ТЗ, 8.8). Ссылка в письме новая: токен хранится только хешем.
+    /// Повторный вызов в тот же момент ничего не выдаёт — см. <see cref="ReminderSchedule"/>.
+    /// </summary>
+    public IReadOnlyDictionary<Guid, AccessToken> Remind(IReadOnlyCollection<int> daysBeforeDeadline, DateTime nowUtc)
+    {
+        if (!AcceptsAnswers(nowUtc))
+        {
+            return new Dictionary<Guid, AccessToken>();
+        }
+
+        return PendingParticipants
+            .Where(p => ReminderSchedule.IsDue(DeadlineAtUtc, daysBeforeDeadline, p.TokenIssuedAtUtc, nowUtc))
+            .ToDictionary(p => p.Id, p => p.IssueReminderToken(nowUtc));
+    }
+
     public void Cancel(DateTime nowUtc)
     {
         EnsureStatus("отменить", SessionStatus.Draft, SessionStatus.InProgress, SessionStatus.Overdue);

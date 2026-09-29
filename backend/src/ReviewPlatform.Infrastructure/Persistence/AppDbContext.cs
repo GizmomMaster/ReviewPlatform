@@ -7,6 +7,7 @@ using ReviewPlatform.Domain.Audit;
 using ReviewPlatform.Domain.Common;
 using ReviewPlatform.Domain.Employees;
 using ReviewPlatform.Domain.Matrix;
+using ReviewPlatform.Domain.Notifications;
 using ReviewPlatform.Infrastructure.Identity;
 
 namespace ReviewPlatform.Infrastructure.Persistence;
@@ -26,6 +27,7 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options)
     public DbSet<SurveyAnswer> SurveyAnswers => Set<SurveyAnswer>();
     public DbSet<AssessmentDecision> AssessmentDecisions => Set<AssessmentDecision>();
     public DbSet<AuditEntry> AuditEntries => Set<AuditEntry>();
+    public DbSet<OutboxEmail> EmailOutbox => Set<OutboxEmail>();
     public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
 
     protected override void OnModelCreating(ModelBuilder builder)

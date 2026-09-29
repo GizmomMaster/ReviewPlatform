@@ -54,7 +54,11 @@ export const auditActionLabels: Record<string, string> = {
   'session.closed_early': 'Опрос завершён досрочно',
   'session.draft_deleted': 'Черновик удалён',
   'session.decided': 'Принято решение',
+  'session.extended': 'Изменён дедлайн',
+  'session.overdue': 'Дедлайн прошёл',
+  'session.reminders_sent': 'Отправлены напоминания',
   'participant.added': 'Добавлен респондент',
   'participant.removed': 'Удалён респондент',
   'participant.link_reissued': 'Перевыпущена ссылка',
+  'participant.invite_resent': 'Приглашение отправлено повторно',
 }

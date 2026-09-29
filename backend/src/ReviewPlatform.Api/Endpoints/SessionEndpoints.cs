@@ -10,6 +10,8 @@ public sealed record UpdateSessionRequest(SessionType Type, DateTime DeadlineAtU
 
 public sealed record AddParticipantRequest(string FullName, string Email, EvaluatorRole Role);
 
+public sealed record ExtendSessionRequest(DateTime NewDeadlineAtUtc);
+
 public sealed record DecideRequest(DecisionOutcome Outcome, Guid NewGradeId, string Comment, IReadOnlyList<PlanItemDto> PlanItems);
 
 internal static class SessionEndpoints
@@ -73,6 +75,17 @@ internal static class SessionEndpoints
         sessions.MapPost("/{id:guid}/participants/{participantId:guid}/reissue-link", async (Guid id, Guid participantId, ISender sender, CancellationToken ct) =>
             TypedResults.Ok(await sender.Send(new ReissueLinkCommand(id, participantId), ct)))
             .WithName("ReissueParticipantLink");
+
+        sessions.MapPost("/{id:guid}/participants/{participantId:guid}/resend-invite", async (Guid id, Guid participantId, ISender sender, CancellationToken ct) =>
+        {
+            await sender.Send(new ResendInviteCommand(id, participantId), ct);
+            return TypedResults.NoContent();
+        })
+            .WithName("ResendParticipantInvite");
+
+        sessions.MapPost("/{id:guid}/extend", async (Guid id, ExtendSessionRequest r, ISender sender, CancellationToken ct) =>
+            TypedResults.Ok(await sender.Send(new ExtendSessionCommand(id, r.NewDeadlineAtUtc), ct)))
+            .WithName("ExtendSession");
 
         sessions.MapPost("/{id:guid}/close-early", async (Guid id, ISender sender, CancellationToken ct) =>
         {

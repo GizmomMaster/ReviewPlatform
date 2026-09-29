@@ -4,11 +4,16 @@
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="ClosedXML" />
+    <PackageReference Include="Fluid.Core" />
+    <PackageReference Include="MailKit" />
     <PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" />
     <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" />
     <PackageReference Include="EFCore.NamingConventions" />
     <PackageReference Include="Microsoft.Extensions.Diagnostics.HealthChecks.EntityFrameworkCore" />
     <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Email\Templates\*.liquid" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\ReviewPlatform.Application\ReviewPlatform.Application.csproj" />

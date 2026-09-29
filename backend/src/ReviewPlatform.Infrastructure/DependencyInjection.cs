@@ -3,11 +3,14 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using ReviewPlatform.Application.Common;
+using ReviewPlatform.Application.Notifications;
 using ReviewPlatform.Application.Reports;
 using ReviewPlatform.Domain.Assessments.Reporting;
+using ReviewPlatform.Infrastructure.Email;
 using ReviewPlatform.Infrastructure.Identity;
 using ReviewPlatform.Infrastructure.Persistence;
 using ReviewPlatform.Infrastructure.Reports;
+using ReviewPlatform.Infrastructure.Scheduling;
 using ReviewPlatform.Infrastructure.Seeding;
 
 namespace ReviewPlatform.Infrastructure;
@@ -47,9 +50,20 @@ public static class DependencyInjection
         services.AddSingleton(TimeProvider.System);
         services.AddScoped<AuthService>();
         services.AddScoped<IIdentityService, IdentityService>();
-        services.AddSingleton<ISurveyLinks, SurveyLinks>();
+        services.AddSingleton<IAppLinks, AppLinks>();
         services.AddSingleton(configuration.GetSection(ReportPolicy.SectionName).Get<ReportPolicy>() ?? new ReportPolicy());
         services.AddSingleton<IReportExporter, ReportExcelExporter>();
+        services.AddSingleton(configuration.GetSection(NotificationPolicy.SectionName).Get<NotificationPolicy>() ?? new NotificationPolicy());
+
+        services.Configure<EmailOptions>(configuration.GetSection(EmailOptions.SectionName));
+        services.Configure<SmtpOptions>(configuration.GetSection(SmtpOptions.SectionName));
+        services.Configure<OutboxOptions>(configuration.GetSection(OutboxOptions.SectionName));
+        services.Configure<SchedulerOptions>(configuration.GetSection(SchedulerOptions.SectionName));
+        services.AddSingleton<IEmailRenderer, FluidEmailRenderer>();
+        services.AddSingleton<IEmailSender, SmtpEmailSender>();
+        services.AddScoped<OutboxProcessor>();
+        services.AddHostedService<OutboxDispatcher>();
+        services.AddHostedService<DeadlineScheduler>();
 
         services.Configure<SeedOptions>(configuration.GetSection(SeedOptions.SectionName));
         services.AddScoped<DatabaseInitializer>();

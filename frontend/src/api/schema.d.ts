@@ -372,6 +372,38 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/assessment-sessions/{id}/participants/{participantId}/resend-invite": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["ResendParticipantInvite"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/assessment-sessions/{id}/extend": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["ExtendSession"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/assessment-sessions/{id}/close-early": {
         parameters: {
             query?: never;
@@ -625,6 +657,10 @@ export interface components {
         };
         /** @enum {unknown} */
         EvaluatorRole: "Self" | "Peer" | "TeamLead" | "Manager" | "Rck" | "ItLeader";
+        ExtendSessionRequest: {
+            /** Format: date-time */
+            newDeadlineAtUtc: string;
+        };
         GradeDto: {
             /** Format: uuid */
             id: string;
@@ -1618,6 +1654,53 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ParticipantLinkDto"];
+                };
+            };
+        };
+    };
+    ResendParticipantInvite: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                participantId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    ExtendSession: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ExtendSessionRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SessionDetailsDto"];
                 };
             };
         };

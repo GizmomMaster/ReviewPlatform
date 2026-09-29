@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { ArrowLeft, BarChart3, CheckCheck, Eye, Gavel, Link2, MoreHorizontal, Pencil, Play, Plus, Trash2, XCircle } from 'lucide-react'
+import { AlertTriangle, ArrowLeft, BarChart3, CalendarClock, CheckCheck, Eye, Gavel, Link2, Mail, MoreHorizontal, Pencil, Play, Plus, Trash2, XCircle } from 'lucide-react'
 import { useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router'
 import { toast } from 'sonner'
@@ -15,6 +15,7 @@ import { AddParticipantDialog } from '@/features/sessions/AddParticipantDialog'
 import { AuditCard } from '@/features/sessions/AuditCard'
 import { DecisionCard } from '@/features/sessions/DecisionCard'
 import { EditSessionDialog } from '@/features/sessions/EditSessionDialog'
+import { ExtendDeadlineDialog } from '@/features/sessions/ExtendDeadlineDialog'
 import { LinksDialog } from '@/features/sessions/LinksDialog'
 import { PreviewDialog } from '@/features/sessions/PreviewDialog'
 import { gradeRoleRulesQuery, sessionQuery, sessionsKey } from '@/features/sessions/queries'
@@ -26,7 +27,7 @@ import { cn } from '@/lib/utils'
 
 type Participant = Schemas['ParticipantDto']
 type ParticipantLink = Schemas['ParticipantLinkDto']
-type Confirm = 'launch' | 'cancel' | 'delete' | 'closeEarly' | { reissue: Participant } | { remove: Participant }
+type Confirm = 'launch' | 'cancel' | 'delete' | 'closeEarly' | { reissue: Participant } | { resend: Participant } | { remove: Participant }
 type AssignableRole = 'Peer' | 'TeamLead' | 'Manager' | 'Rck' | 'ItLeader'
 
 const participantTone: Record<ParticipantStatus, string> = {
@@ -43,7 +44,7 @@ export function SessionPage() {
   const session = useQuery(sessionQuery(id))
   const rules = useQuery(gradeRoleRulesQuery)
   const [links, setLinks] = useState<ParticipantLink[] | null>(null)
-  const [dialog, setDialog] = useState<'preview' | 'edit' | 'add' | null>(null)
+  const [dialog, setDialog] = useState<'preview' | 'edit' | 'extend' | 'add' | null>(null)
   const [confirm, setConfirm] = useState<Confirm | null>(null)
 
   const invalidate = () => queryClient.invalidateQueries({ queryKey: sessionsKey })
@@ -54,7 +55,7 @@ export function SessionPage() {
     mutationFn: () => unwrap(api.POST('/api/assessment-sessions/{id}/launch', path)),
     onSuccess: async (result) => {
       await invalidate()
-      toast.success('Опрос запущен')
+      toast.success('Опрос запущен, приглашения отправлены на почту')
       setLinks(result)
     },
     onError,
@@ -99,6 +100,17 @@ export function SessionPage() {
     },
     onError,
   })
+  const resend = useMutation({
+    mutationFn: (participant: Participant) =>
+      unwrap(
+        api.POST('/api/assessment-sessions/{id}/participants/{participantId}/resend-invite', { params: { path: { id, participantId: participant.id } } }),
+      ),
+    onSuccess: async (_, participant) => {
+      await invalidate()
+      toast.success(`Приглашение отправлено: ${participant.email}`)
+    },
+    onError,
+  })
 
   if (session.isPending) return <Skeleton className="h-96 w-full" />
   if (session.isError) return <p className="text-destructive">Сессия не найдена или недоступна.</p>
@@ -122,6 +134,7 @@ export function SessionPage() {
     else if (confirm === 'delete') remove.mutate()
     else if (confirm === 'closeEarly') closeEarly.mutate()
     else if (confirm && 'reissue' in confirm) reissue.mutate(confirm.reissue.id)
+    else if (confirm && 'resend' in confirm) resend.mutate(confirm.resend)
     else if (confirm && 'remove' in confirm) removeParticipant.mutate(confirm.remove.id)
     setConfirm(null)
   }
@@ -191,6 +204,11 @@ export function SessionPage() {
                     <Trash2 /> Удалить черновик
                   </DropdownMenuItem>
                 )}
+                {isRunning && (
+                  <DropdownMenuItem onSelect={() => setDialog('extend')}>
+                    <CalendarClock /> {s.status === 'Overdue' ? 'Продлить опрос' : 'Изменить дедлайн'}
+                  </DropdownMenuItem>
+                )}
                 {canCloseEarly && (
                   <DropdownMenuItem onSelect={() => setConfirm('closeEarly')}>
                     <CheckCheck /> Завершить опрос досрочно
@@ -206,6 +224,25 @@ export function SessionPage() {
           )}
         </div>
       </div>
+
+      {s.status === 'Overdue' && (
+        <div className="flex flex-wrap items-center gap-3 rounded-lg border border-amber-300 bg-amber-50 p-4 text-amber-900">
+          <AlertTriangle className="size-5 shrink-0" />
+          <p className="min-w-60 flex-1 text-sm">
+            Дедлайн прошёл, ответы больше не принимаются. Продлите опрос — не отправившие анкету получат новые ссылки{canCloseEarly ? ', — или завершите его с имеющимися ответами' : ''}.
+          </p>
+          <div className="flex gap-2">
+            <Button size="sm" onClick={() => setDialog('extend')}>
+              <CalendarClock /> Продлить
+            </Button>
+            {canCloseEarly && (
+              <Button size="sm" variant="outline" onClick={() => setConfirm('closeEarly')}>
+                <CheckCheck /> Завершить опрос
+              </Button>
+            )}
+          </div>
+        </div>
+      )}
 
       {s.decision && <DecisionCard decision={s.decision} currentGradeCode={s.currentGrade.code} />}
 
@@ -265,9 +302,14 @@ export function SessionPage() {
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
                               {canReissue && (
-                                <DropdownMenuItem onSelect={() => setConfirm({ reissue: p })}>
-                                  <Link2 /> Перевыпустить ссылку
-                                </DropdownMenuItem>
+                                <>
+                                  <DropdownMenuItem onSelect={() => setConfirm({ resend: p })}>
+                                    <Mail /> Отправить приглашение повторно
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem onSelect={() => setConfirm({ reissue: p })}>
+                                    <Link2 /> Перевыпустить ссылку
+                                  </DropdownMenuItem>
+                                </>
                               )}
                               {canRemove && (
                                 <DropdownMenuItem variant="destructive" onSelect={() => setConfirm({ remove: p })}>
@@ -304,6 +346,7 @@ export function SessionPage() {
 
       {dialog === 'preview' && <PreviewDialog sessionId={s.id} onClose={() => setDialog(null)} />}
       {dialog === 'edit' && <EditSessionDialog session={s} onClose={() => setDialog(null)} />}
+      {dialog === 'extend' && <ExtendDeadlineDialog session={s} onClose={() => setDialog(null)} />}
       {dialog === 'add' && (
         <AddParticipantDialog
           sessionId={s.id}
@@ -329,7 +372,8 @@ function confirmTexts(confirm: Confirm | null) {
   if (confirm === 'launch')
     return {
       title: 'Запустить опрос?',
-      description: 'Анкета зафиксируется по текущей матрице, для каждого респондента будет создана личная ссылка. Тип оценки и дедлайн после запуска не меняются.',
+      description:
+        'Анкета зафиксируется по текущей матрице, каждый респондент получит письмо с личной ссылкой. Тип оценки после запуска не меняется, дедлайн можно продлить.',
       confirmLabel: 'Запустить',
     }
   if (confirm === 'cancel')
@@ -342,7 +386,17 @@ function confirmTexts(confirm: Confirm | null) {
     }
   if (confirm === 'delete') return { title: 'Удалить черновик?', description: 'Черновик и список респондентов будут удалены.', confirmLabel: 'Удалить', destructive: true }
   if (confirm && 'reissue' in confirm)
-    return { title: 'Перевыпустить ссылку?', description: `Старая ссылка ${confirm.reissue.fullName} перестанет работать. Черновик ответов сохранится.`, confirmLabel: 'Перевыпустить' }
+    return {
+      title: 'Перевыпустить ссылку?',
+      description: `Старая ссылка ${confirm.reissue.fullName} перестанет работать, новая придёт на ${confirm.reissue.email} и будет показана здесь. Черновик ответов сохранится.`,
+      confirmLabel: 'Перевыпустить',
+    }
+  if (confirm && 'resend' in confirm)
+    return {
+      title: 'Отправить приглашение повторно?',
+      description: `На ${confirm.resend.email} придёт письмо с новой ссылкой, старая перестанет работать. Черновик ответов сохранится.`,
+      confirmLabel: 'Отправить',
+    }
   if (confirm && 'remove' in confirm)
     return { title: 'Удалить респондента?', description: `${confirm.remove.fullName} будет исключён из сессии, его ссылка перестанет работать.`, confirmLabel: 'Удалить', destructive: true }
   return { title: '', description: '', confirmLabel: '' }

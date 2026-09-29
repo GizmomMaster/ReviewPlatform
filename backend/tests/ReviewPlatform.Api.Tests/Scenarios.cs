@@ -19,6 +19,8 @@ internal sealed class Scenarios(ApiFactory factory)
     public sealed record LaunchedSession(Guid ManagerId, HttpClient Manager, EmployeeDto Employee, SessionDetailsDto Session, List<ParticipantLinkDto> Links)
     {
         public ParticipantLinkDto Link(EvaluatorRole role) => Links.First(l => l.Role == role);
+
+        public string Email(EvaluatorRole role) => Session.Participants.First(p => p.Role == role).Email;
     }
 
     public static async Task<EmployeeDto> CreateEmployeeAsync(HttpClient client, string gradeCode)
@@ -31,6 +33,9 @@ internal sealed class Scenarios(ApiFactory factory)
         return (await response.Content.ReadFromJsonAsync<EmployeeDto>(ApiFactory.Json, Ct))!;
     }
 
+    /// <summary>Уникальный адрес: письма в outbox общие для всех тестов и ищутся по получателю.</summary>
+    public static string UniqueEmail(string prefix) => $"{prefix}-{Guid.NewGuid():N}@test.local";
+
     public static async Task<GradeDto> GradeAsync(HttpClient client, string code) =>
         (await client.GetFromJsonAsync<List<GradeDto>>("/api/grades", ApiFactory.Json, Ct))!.Single(g => g.Code == code);
 
@@ -41,7 +46,7 @@ internal sealed class Scenarios(ApiFactory factory)
         var employee = await CreateEmployeeAsync(manager, "E3");
         var created = await manager.PostAsJsonAsync("/api/assessment-sessions", new CreateSessionCommand(employee.Id, SessionType.Transition,
             DateTime.UtcNow.AddDays(7),
-            [new("Коллега Сценариев", "peer@test.local", EvaluatorRole.Peer), new("Лид Сценариев", "lead@test.local", EvaluatorRole.TeamLead), new("Менеджер Сценариев", "m@test.local", EvaluatorRole.Manager)]),
+            [new("Коллега Сценариев", UniqueEmail("peer"), EvaluatorRole.Peer), new("Лид Сценариев", UniqueEmail("lead"), EvaluatorRole.TeamLead), new("Менеджер Сценариев", UniqueEmail("m"), EvaluatorRole.Manager)]),
             ApiFactory.Json, Ct);
         var session = (await created.Content.ReadFromJsonAsync<SessionDetailsDto>(ApiFactory.Json, Ct))!;
         var launched = await manager.PostAsync($"/api/assessment-sessions/{session.Id}/launch", null, Ct);

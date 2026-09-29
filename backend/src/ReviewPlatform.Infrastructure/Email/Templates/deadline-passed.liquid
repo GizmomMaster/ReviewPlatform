@@ -1,0 +1,10 @@
+<p>Здравствуйте, {{ owner_name }}!</p>
+<p>Дедлайн опроса по сотруднику <strong>{{ employee_name }}</strong> прошёл {{ deadline_at_utc | datetime }}. Отправлено анкет: {{ submitted_count }}. Ответы больше не принимаются.</p>
+<p>Не отправили анкету:</p>
+<ul>
+{% for respondent in pending_respondents %}  <li>{{ respondent }}</li>
+{% endfor %}</ul>
+<p>Продлите срок (не отправившие анкету получат новые ссылки) или завершите опрос с имеющимися ответами.</p>
+<p style="margin:24px 0;">
+  <a href="{{ session_url }}" style="display:inline-block;background:#18181b;color:#ffffff;text-decoration:none;padding:12px 20px;border-radius:6px;font-weight:600;">Открыть сессию</a>
+</p>

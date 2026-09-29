@@ -1,0 +1,22 @@
+<p>Здравствуйте, {{ respondent_name }}!</p>
+{% case kind %}
+{% when "Invitation" %}
+  {% if is_self %}
+<p>Приглашаем вас пройти самооценку компетенций. Ваша оценка поможет сравнить собственный взгляд с мнением коллег.</p>
+  {% else %}
+<p>Приглашаем вас оценить компетенции сотрудника <strong>{{ employee_name }}</strong>. Ваша роль в оценке: {{ role_name }}.</p>
+  {% endif %}
+{% when "LinkReissued" %}
+<p>Вам выпущена новая ссылка на опрос{% unless is_self %} по сотруднику <strong>{{ employee_name }}</strong>{% endunless %}. Предыдущая ссылка больше не работает, уже сохранённые ответы на месте.</p>
+{% when "Reminder" %}
+<p>Напоминаем: вы ещё не отправили анкету{% if is_self %} самооценки{% else %} по сотруднику <strong>{{ employee_name }}</strong>{% endif %}. Сохранённые ответы на месте — можно продолжить с того же места.</p>
+{% when "DeadlineExtended" %}
+<p>Срок опроса{% unless is_self %} по сотруднику <strong>{{ employee_name }}</strong>{% endunless %} продлён — ещё есть время отправить анкету. Сохранённые ответы на месте.</p>
+{% endcase %}
+<p>Ответить нужно до <strong>{{ deadline_at_utc | datetime }}</strong>.</p>
+<p style="margin:24px 0;">
+  <a href="{{ survey_url }}" style="display:inline-block;background:#18181b;color:#ffffff;text-decoration:none;padding:12px 20px;border-radius:6px;font-weight:600;">Перейти к анкете</a>
+</p>
+<p style="font-size:13px;color:#52525b;">Если кнопка не работает, скопируйте ссылку в браузер:<br><a href="{{ survey_url }}" style="color:#2563eb;word-break:break-all;">{{ survey_url }}</a></p>
+<p style="font-size:13px;color:#52525b;">{% unless kind == "Invitation" %}Ссылки из предыдущих писем больше не действуют. {% endunless %}Ссылка личная — не пересылайте её.
+{% if is_self %}Руководитель увидит вашу самооценку и комментарии.{% else %}Оценка не анонимна: руководитель увидит ваши оценки и комментарии с указанием вашего имени.{% endif %}</p>

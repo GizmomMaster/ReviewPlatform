@@ -3,6 +3,7 @@ using FluentValidation.Results;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using ReviewPlatform.Application.Common;
+using ReviewPlatform.Application.Notifications;
 using ReviewPlatform.Domain.Assessments;
 using ReviewPlatform.Domain.Matrix;
 
@@ -134,7 +135,7 @@ internal sealed class SubmitSurveyValidator : AbstractValidator<SubmitSurveyComm
     public SubmitSurveyValidator() => RuleFor(c => c.Answers).SetValidator(new AnswersValidator());
 }
 
-internal sealed class SubmitSurveyHandler(IAppDbContext db, SurveyLoader loader, TimeProvider time) : IRequestHandler<SubmitSurveyCommand>
+internal sealed class SubmitSurveyHandler(IAppDbContext db, SurveyLoader loader, SessionNotifier notifier, TimeProvider time) : IRequestHandler<SubmitSurveyCommand>
 {
     private const int MaxAttempts = 5;
 
@@ -149,6 +150,12 @@ internal sealed class SubmitSurveyHandler(IAppDbContext db, SurveyLoader loader,
                 // Ответы не сохраняем: отправка не состоялась, черновик сохраняется отдельным запросом
                 db.ChangeTracker.Clear();
                 throw new ValidationException(errors.Select(e => new ValidationFailure(e.IndicatorId.ToString(), e.Message)));
+            }
+
+            if (session.Status == SessionStatus.AwaitingDecision)
+            {
+                // Последняя анкета: письмо владельцу сохраняется в той же транзакции, что и смена статуса
+                await notifier.SurveyCompletedAsync(session, cancellationToken);
             }
 
             try
