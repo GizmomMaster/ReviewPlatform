@@ -37,7 +37,9 @@ export const router = createBrowserRouter([
       { path: 'sessions/new', lazy: async () => ({ Component: (await import('@/features/sessions/NewSessionPage')).NewSessionPage }) },
       { path: 'sessions/:id', lazy: async () => ({ Component: (await import('@/features/sessions/SessionPage')).SessionPage }) },
       { path: 'sessions/:id/report', lazy: async () => ({ Component: (await import('@/features/reports/ReportPage')).ReportPage }) },
+      { path: 'sessions/:id/decision', lazy: async () => ({ Component: (await import('@/features/sessions/DecisionPage')).DecisionPage }) },
       { path: 'employees', lazy: async () => ({ Component: (await import('@/features/employees/EmployeesPage')).EmployeesPage }) },
+      { path: 'employees/:id', lazy: async () => ({ Component: (await import('@/features/employees/EmployeePage')).EmployeePage }) },
       { path: 'matrix', lazy: async () => ({ Component: (await import('@/features/matrix/MatrixPage')).MatrixPage }) },
       {
         path: 'users',

@@ -1,6 +1,7 @@
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Archive, MoreHorizontal, Pencil, Plus, Search } from 'lucide-react'
 import { useDeferredValue, useState } from 'react'
+import { Link } from 'react-router'
 import { toast } from 'sonner'
 import { api, unwrap, type Schemas } from '@/api/client'
 import { Badge } from '@/components/ui/badge'
@@ -77,7 +78,9 @@ export function EmployeesPage() {
               {employees.data.map((employee) => (
                 <TableRow key={employee.id} className={employee.isActive ? undefined : 'text-muted-foreground'}>
                   <TableCell className="font-medium">
-                    {employee.fullName}
+                    <Link to={`/admin/employees/${employee.id}`} className="hover:underline">
+                      {employee.fullName}
+                    </Link>
                     {!employee.isActive && (
                       <Badge variant="outline" className="ml-2">
                         архив

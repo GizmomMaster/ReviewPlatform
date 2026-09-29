@@ -24,6 +24,7 @@ public static class DependencyInjection
         services.AddScoped<SessionReader>();
         services.AddScoped<IndicatorSnapshotBuilder>();
         services.AddScoped<SurveyLoader>();
+        services.AddScoped<IAuditLog, AuditLog>();
         return services;
     }
 }

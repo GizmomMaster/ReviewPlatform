@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Npgsql;
 using ReviewPlatform.Application.Common;
 using ReviewPlatform.Domain.Matrix;
 using ReviewPlatform.Infrastructure.Identity;
@@ -12,6 +13,9 @@ namespace ReviewPlatform.Infrastructure.Seeding;
 /// <summary>
 /// Применяет миграции и заполняет справочники. Идемпотентен: существующие данные не трогает.
 /// Выполняется под advisory-lock, чтобы несколько экземпляров приложения не заполняли БД одновременно.
+/// Блокировка берётся на отдельном соединении без пула: EF при миграции переоткрывает своё соединение,
+/// и сессионная блокировка на нём осталась бы висеть в пуле. Закрытие отдельного соединения
+/// гарантированно снимает блокировку, даже если инициализация упала.
 /// </summary>
 public sealed partial class DatabaseInitializer(
     AppDbContext db,
@@ -25,30 +29,23 @@ public sealed partial class DatabaseInitializer(
 
     public async Task InitializeAsync(CancellationToken cancellationToken = default)
     {
-        await db.Database.OpenConnectionAsync(cancellationToken);
-        try
+        var lockConnectionString = new NpgsqlConnectionStringBuilder(db.Database.GetConnectionString()) { Pooling = false }.ConnectionString;
+        await using var lockConnection = new NpgsqlConnection(lockConnectionString);
+        await lockConnection.OpenAsync(cancellationToken);
+        await using (var acquire = new NpgsqlCommand($"SELECT pg_advisory_lock({InitializationLockKey})", lockConnection) { CommandTimeout = 300 })
         {
-            await db.Database.ExecuteSqlAsync($"SELECT pg_advisory_lock({InitializationLockKey})", cancellationToken);
-            try
-            {
-                await db.Database.MigrateAsync(cancellationToken);
+            await acquire.ExecuteNonQueryAsync(cancellationToken);
+        }
 
-                var grades = await SeedGradesAsync(cancellationToken);
-                await SeedRoleRulesAsync(grades, cancellationToken);
-                var track = await SeedBackendTrackAsync(cancellationToken);
-                await SeedMatrixAsync(track, grades, cancellationToken);
-                await SeedRolesAsync();
-                await SeedBootstrapAdminAsync();
-            }
-            finally
-            {
-                await db.Database.ExecuteSqlAsync($"SELECT pg_advisory_unlock({InitializationLockKey})", CancellationToken.None);
-            }
-        }
-        finally
-        {
-            await db.Database.CloseConnectionAsync();
-        }
+        await db.Database.MigrateAsync(cancellationToken);
+
+        var grades = await SeedGradesAsync(cancellationToken);
+        await SeedRoleRulesAsync(grades, cancellationToken);
+        var track = await SeedBackendTrackAsync(cancellationToken);
+        await SeedMatrixAsync(track, grades, cancellationToken);
+        await SeedRolesAsync();
+        await SeedBootstrapAdminAsync();
+        // Блокировка снимается закрытием lockConnection (пул отключён — сессия Postgres завершается)
     }
 
     private async Task<Dictionary<string, Grade>> SeedGradesAsync(CancellationToken cancellationToken)

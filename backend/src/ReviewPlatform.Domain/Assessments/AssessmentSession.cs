@@ -55,6 +55,8 @@ public sealed class AssessmentSession : Entity
     /// <summary>Токен оптимистической блокировки (xmin в PostgreSQL).</summary>
     public uint Version { get; private set; }
 
+    public AssessmentDecision? Decision { get; private set; }
+
     public IReadOnlyCollection<Participant> Participants => _participants;
     public IReadOnlyCollection<SessionIndicator> Indicators => _indicators;
 
@@ -166,6 +168,50 @@ public sealed class AssessmentSession : Entity
     }
 
     public void EnsureCanDelete() => EnsureStatus("удалить", SessionStatus.Draft);
+
+    /// <summary>Досрочное завершение опроса: нужна хотя бы одна отправленная анкета, кроме самооценки.</summary>
+    public void CloseEarly(DateTime nowUtc)
+    {
+        EnsureStatus("завершить опрос досрочно", SessionStatus.InProgress, SessionStatus.Overdue);
+        if (!_participants.Any(p => p.IsActive && p.Role != EvaluatorRole.Self && p.Status == ParticipantStatus.Submitted))
+        {
+            throw new DomainException("Досрочно завершить опрос можно, когда хотя бы один респондент, кроме самого сотрудника, отправил анкету.");
+        }
+
+        Status = SessionStatus.AwaitingDecision;
+        CompletedAtUtc = nowUtc;
+    }
+
+    /// <summary>
+    /// Решение руководителя. Допустимость нового грейда относительно текущего проверяет вызывающий
+    /// код (нужен порядок грейдов): повышение — выше текущего, подтверждение — текущий, неподтверждение — не выше.
+    /// </summary>
+    public AssessmentDecision Decide(Guid decidedByUserId, DecisionOutcome outcome, Guid newGradeId, string comment,
+        IReadOnlyList<PlanItemInput> planItems, DateTime nowUtc)
+    {
+        EnsureStatus("принять решение", SessionStatus.AwaitingDecision);
+
+        var knownIndicators = _indicators.Select(i => i.Id).ToHashSet();
+        if (planItems.Any(p => p.SessionIndicatorId is { } id && !knownIndicators.Contains(id)))
+        {
+            throw new DomainException("Пункт плана ссылается на индикатор не из этой сессии.");
+        }
+
+        if (outcome == DecisionOutcome.GradeConfirmed && newGradeId != CurrentGradeId)
+        {
+            throw new DomainException("При подтверждении грейд сотрудника не меняется.");
+        }
+
+        if (outcome == DecisionOutcome.Promoted && newGradeId == CurrentGradeId)
+        {
+            throw new DomainException("При повышении укажите новый грейд.");
+        }
+
+        Decision = new AssessmentDecision(Id, decidedByUserId, outcome, newGradeId, comment, planItems, nowUtc);
+        Status = SessionStatus.Closed;
+        ClosedAtUtc = nowUtc;
+        return Decision;
+    }
 
     /// <summary>Анкета принимает ответы: опрос идёт и дедлайн не наступил.</summary>
     public bool AcceptsAnswers(DateTime nowUtc) => Status == SessionStatus.InProgress && nowUtc <= DeadlineAtUtc;

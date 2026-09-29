@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
 using ReviewPlatform.Domain.Assessments;
+using ReviewPlatform.Domain.Audit;
 using ReviewPlatform.Domain.Employees;
 using ReviewPlatform.Domain.Matrix;
 
@@ -18,6 +19,8 @@ public interface IAppDbContext
     DbSet<Participant> Participants { get; }
     DbSet<SessionIndicator> SessionIndicators { get; }
     DbSet<SurveyAnswer> SurveyAnswers { get; }
+    DbSet<AssessmentDecision> AssessmentDecisions { get; }
+    DbSet<AuditEntry> AuditEntries { get; }
 
     ChangeTracker ChangeTracker { get; }
 

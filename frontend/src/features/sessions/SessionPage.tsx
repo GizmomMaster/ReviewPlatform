@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { ArrowLeft, BarChart3, Eye, Link2, MoreHorizontal, Pencil, Play, Plus, Trash2, XCircle } from 'lucide-react'
+import { ArrowLeft, BarChart3, CheckCheck, Eye, Gavel, Link2, MoreHorizontal, Pencil, Play, Plus, Trash2, XCircle } from 'lucide-react'
 import { useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router'
 import { toast } from 'sonner'
@@ -12,6 +12,8 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Skeleton } from '@/components/ui/skeleton'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { AddParticipantDialog } from '@/features/sessions/AddParticipantDialog'
+import { AuditCard } from '@/features/sessions/AuditCard'
+import { DecisionCard } from '@/features/sessions/DecisionCard'
 import { EditSessionDialog } from '@/features/sessions/EditSessionDialog'
 import { LinksDialog } from '@/features/sessions/LinksDialog'
 import { PreviewDialog } from '@/features/sessions/PreviewDialog'
@@ -24,7 +26,7 @@ import { cn } from '@/lib/utils'
 
 type Participant = Schemas['ParticipantDto']
 type ParticipantLink = Schemas['ParticipantLinkDto']
-type Confirm = 'launch' | 'cancel' | 'delete' | { reissue: Participant } | { remove: Participant }
+type Confirm = 'launch' | 'cancel' | 'delete' | 'closeEarly' | { reissue: Participant } | { remove: Participant }
 type AssignableRole = 'Peer' | 'TeamLead' | 'Manager' | 'Rck' | 'ItLeader'
 
 const participantTone: Record<ParticipantStatus, string> = {
@@ -74,6 +76,14 @@ export function SessionPage() {
     },
     onError,
   })
+  const closeEarly = useMutation({
+    mutationFn: () => unwrap(api.POST('/api/assessment-sessions/{id}/close-early', path)),
+    onSuccess: async () => {
+      await invalidate()
+      toast.success('Опрос завершён, можно принимать решение')
+    },
+    onError,
+  })
   const removeParticipant = useMutation({
     mutationFn: (participantId: string) =>
       unwrap(api.DELETE('/api/assessment-sessions/{id}/participants/{participantId}', { params: { path: { id, participantId } } })),
@@ -104,11 +114,13 @@ export function SessionPage() {
   const missing = s.roleRequirements.find((r) => r.role !== 'Self' && r.count < r.minCount)?.role as AssignableRole | undefined
   const active = s.participants.filter((p) => p.status !== 'Removed')
   const submitted = active.filter((p) => p.status === 'Submitted').length
+  const canCloseEarly = isRunning && active.some((p) => p.role !== 'Self' && p.status === 'Submitted')
 
   const runConfirm = () => {
     if (confirm === 'launch') launch.mutate()
     else if (confirm === 'cancel') cancel.mutate()
     else if (confirm === 'delete') remove.mutate()
+    else if (confirm === 'closeEarly') closeEarly.mutate()
     else if (confirm && 'reissue' in confirm) reissue.mutate(confirm.reissue.id)
     else if (confirm && 'remove' in confirm) removeParticipant.mutate(confirm.remove.id)
     setConfirm(null)
@@ -143,9 +155,16 @@ export function SessionPage() {
             <Eye /> Анкета
           </Button>
           {s.launchedAtUtc && (
-            <Button variant={s.status === 'AwaitingDecision' ? 'default' : 'outline'} asChild>
+            <Button variant="outline" asChild>
               <Link to={`/admin/sessions/${s.id}/report`}>
                 <BarChart3 /> Отчёт
+              </Link>
+            </Button>
+          )}
+          {s.status === 'AwaitingDecision' && (
+            <Button asChild>
+              <Link to={`/admin/sessions/${s.id}/decision`}>
+                <Gavel /> Принять решение
               </Link>
             </Button>
           )}
@@ -172,6 +191,11 @@ export function SessionPage() {
                     <Trash2 /> Удалить черновик
                   </DropdownMenuItem>
                 )}
+                {canCloseEarly && (
+                  <DropdownMenuItem onSelect={() => setConfirm('closeEarly')}>
+                    <CheckCheck /> Завершить опрос досрочно
+                  </DropdownMenuItem>
+                )}
                 {isRunning && (
                   <DropdownMenuItem variant="destructive" onSelect={() => setConfirm('cancel')}>
                     <XCircle /> Отменить сессию
@@ -182,6 +206,8 @@ export function SessionPage() {
           )}
         </div>
       </div>
+
+      {s.decision && <DecisionCard decision={s.decision} currentGradeCode={s.currentGrade.code} />}
 
       <div className="grid gap-4 lg:grid-cols-[1fr_20rem]">
         <Card>
@@ -260,15 +286,20 @@ export function SessionPage() {
           </CardContent>
         </Card>
 
-        <Card className="h-fit">
-          <CardHeader>
-            <CardTitle>Требования к составу</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <RoleRequirementsList requirements={s.roleRequirements} />
-            {isDraft && !canLaunch && <p className="mt-3 text-xs text-muted-foreground">Добавьте недостающих респондентов, чтобы запустить опрос.</p>}
-          </CardContent>
-        </Card>
+        <div className="grid h-fit gap-4">
+          {editable && (
+            <Card className="h-fit">
+              <CardHeader>
+                <CardTitle>Требования к составу</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <RoleRequirementsList requirements={s.roleRequirements} />
+                {isDraft && !canLaunch && <p className="mt-3 text-xs text-muted-foreground">Добавьте недостающих респондентов, чтобы запустить опрос.</p>}
+              </CardContent>
+            </Card>
+          )}
+          <AuditCard sessionId={s.id} />
+        </div>
       </div>
 
       {dialog === 'preview' && <PreviewDialog sessionId={s.id} onClose={() => setDialog(null)} />}
@@ -303,6 +334,12 @@ function confirmTexts(confirm: Confirm | null) {
     }
   if (confirm === 'cancel')
     return { title: 'Отменить сессию?', description: 'Ссылки респондентов перестанут работать. Отмену нельзя откатить.', confirmLabel: 'Отменить сессию', destructive: true }
+  if (confirm === 'closeEarly')
+    return {
+      title: 'Завершить опрос досрочно?',
+      description: 'Не отправившие анкеты больше не смогут ответить. Отчёт построится по уже отправленным анкетам.',
+      confirmLabel: 'Завершить опрос',
+    }
   if (confirm === 'delete') return { title: 'Удалить черновик?', description: 'Черновик и список респондентов будут удалены.', confirmLabel: 'Удалить', destructive: true }
   if (confirm && 'reissue' in confirm)
     return { title: 'Перевыпустить ссылку?', description: `Старая ссылка ${confirm.reissue.fullName} перестанет работать. Черновик ответов сохранится.`, confirmLabel: 'Перевыпустить' }

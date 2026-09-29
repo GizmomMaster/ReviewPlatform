@@ -28,6 +28,29 @@ internal sealed class AssessmentSessionConfiguration : IEntityTypeConfiguration<
         builder.Navigation(s => s.Participants).HasField("_participants");
         builder.HasMany(s => s.Indicators).WithOne().HasForeignKey(i => i.SessionId).OnDelete(DeleteBehavior.Cascade);
         builder.Navigation(s => s.Indicators).HasField("_indicators");
+        builder.HasOne(s => s.Decision).WithOne().HasForeignKey<AssessmentDecision>(d => d.SessionId).OnDelete(DeleteBehavior.Cascade);
+    }
+}
+
+internal sealed class AssessmentDecisionConfiguration : IEntityTypeConfiguration<AssessmentDecision>
+{
+    public void Configure(EntityTypeBuilder<AssessmentDecision> builder)
+    {
+        builder.Property(d => d.Comment).HasMaxLength(AssessmentDecision.MaxCommentLength);
+        builder.HasIndex(d => d.SessionId).IsUnique();
+        builder.HasOne<Grade>().WithMany().HasForeignKey(d => d.NewGradeId).OnDelete(DeleteBehavior.Restrict);
+        builder.HasOne<AppUser>().WithMany().HasForeignKey(d => d.DecidedByUserId).OnDelete(DeleteBehavior.Restrict);
+        builder.HasMany(d => d.PlanItems).WithOne().HasForeignKey(p => p.DecisionId).OnDelete(DeleteBehavior.Cascade);
+        builder.Navigation(d => d.PlanItems).HasField("_planItems");
+    }
+}
+
+internal sealed class DevelopmentPlanItemConfiguration : IEntityTypeConfiguration<DevelopmentPlanItem>
+{
+    public void Configure(EntityTypeBuilder<DevelopmentPlanItem> builder)
+    {
+        builder.Property(p => p.Text).HasMaxLength(DevelopmentPlanItem.MaxTextLength);
+        builder.HasOne<SessionIndicator>().WithMany().HasForeignKey(p => p.SessionIndicatorId).OnDelete(DeleteBehavior.SetNull);
     }
 }
 

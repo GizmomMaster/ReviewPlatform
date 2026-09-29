@@ -10,6 +10,8 @@ public sealed record UpdateSessionRequest(SessionType Type, DateTime DeadlineAtU
 
 public sealed record AddParticipantRequest(string FullName, string Email, EvaluatorRole Role);
 
+public sealed record DecideRequest(DecisionOutcome Outcome, Guid NewGradeId, string Comment, IReadOnlyList<PlanItemDto> PlanItems);
+
 internal static class SessionEndpoints
 {
     public static IEndpointRouteBuilder MapSessionEndpoints(this IEndpointRouteBuilder app)
@@ -71,6 +73,21 @@ internal static class SessionEndpoints
         sessions.MapPost("/{id:guid}/participants/{participantId:guid}/reissue-link", async (Guid id, Guid participantId, ISender sender, CancellationToken ct) =>
             TypedResults.Ok(await sender.Send(new ReissueLinkCommand(id, participantId), ct)))
             .WithName("ReissueParticipantLink");
+
+        sessions.MapPost("/{id:guid}/close-early", async (Guid id, ISender sender, CancellationToken ct) =>
+        {
+            await sender.Send(new CloseSessionEarlyCommand(id), ct);
+            return TypedResults.NoContent();
+        })
+            .WithName("CloseSessionEarly");
+
+        sessions.MapPost("/{id:guid}/decision", async (Guid id, DecideRequest r, ISender sender, CancellationToken ct) =>
+            TypedResults.Ok(await sender.Send(new DecideSessionCommand(id, r.Outcome, r.NewGradeId, r.Comment, r.PlanItems ?? []), ct)))
+            .WithName("DecideSession");
+
+        sessions.MapGet("/{id:guid}/audit", async (Guid id, ISender sender, CancellationToken ct) =>
+            TypedResults.Ok(await sender.Send(new GetSessionAuditQuery(id), ct)))
+            .WithName("GetSessionAudit");
 
         sessions.MapGet("/{id:guid}/report", async (Guid id, ISender sender, CancellationToken ct) =>
             TypedResults.Ok(await sender.Send(new GetSessionReportQuery(id), ct)))

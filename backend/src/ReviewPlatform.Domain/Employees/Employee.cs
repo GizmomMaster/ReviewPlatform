@@ -30,6 +30,8 @@ public sealed class Employee : Entity
         ManagerUserId = managerUserId;
     }
 
+    public void ChangeGrade(Guid gradeId) => CurrentGradeId = gradeId;
+
     public void Archive() => IsActive = false;
 
     public void Restore() => IsActive = true;

@@ -13,7 +13,10 @@ internal sealed class SessionAccess(IAppDbContext db, ICurrentUser currentUser)
         currentUser.IsAdmin ? db.AssessmentSessions : db.AssessmentSessions.Where(s => s.OwnerUserId == currentUser.UserId);
 
     public async Task<AssessmentSession> LoadAsync(Guid id, CancellationToken cancellationToken) =>
-        await Visible().Include(s => s.Participants).SingleOrDefaultAsync(s => s.Id == id, cancellationToken)
+        await Visible()
+            .Include(s => s.Participants)
+            .Include(s => s.Decision).ThenInclude(d => d!.PlanItems)
+            .SingleOrDefaultAsync(s => s.Id == id, cancellationToken)
             ?? throw new NotFoundException(nameof(AssessmentSession), id);
 }
 
@@ -70,6 +73,20 @@ internal sealed class SessionReader(IAppDbContext db, IIdentityService identity,
             session.Id, employee.Id, employee.FullName, employee.Email, trackName, session.Type,
             grades[session.CurrentGradeId], session.TargetGradeId is { } t ? grades[t] : null,
             session.Status, session.DeadlineAtUtc, session.CreatedAtUtc, session.LaunchedAtUtc, session.CompletedAtUtc, session.ClosedAtUtc,
-            session.OwnerUserId, ownerName, indicatorCount, participants, requirements);
+            session.OwnerUserId, ownerName, indicatorCount, participants, requirements,
+            await DecisionAsync(session, cancellationToken));
+    }
+
+    public async Task<DecisionDto?> DecisionAsync(AssessmentSession session, CancellationToken cancellationToken)
+    {
+        if (session.Decision is not { } d)
+        {
+            return null;
+        }
+
+        var grade = await db.Grades.Where(g => g.Id == d.NewGradeId).Select(g => new GradeDto(g.Id, g.Code, g.Name, g.Order)).SingleAsync(cancellationToken);
+        var decidedBy = (await identity.GetUserNamesAsync([d.DecidedByUserId], cancellationToken)).GetValueOrDefault(d.DecidedByUserId, "—");
+        return new DecisionDto(d.Outcome, grade, d.Comment, d.DecidedAtUtc, decidedBy,
+            [.. d.PlanItems.OrderBy(p => p.Order).Select(p => new PlanItemDto(p.Text, p.SessionIndicatorId, p.DueDate))]);
     }
 }

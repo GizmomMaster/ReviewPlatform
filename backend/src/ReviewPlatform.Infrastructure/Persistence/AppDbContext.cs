@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using ReviewPlatform.Application.Common;
 using ReviewPlatform.Domain.Assessments;
+using ReviewPlatform.Domain.Audit;
 using ReviewPlatform.Domain.Common;
 using ReviewPlatform.Domain.Employees;
 using ReviewPlatform.Domain.Matrix;
@@ -23,6 +24,8 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options)
     public DbSet<Participant> Participants => Set<Participant>();
     public DbSet<SessionIndicator> SessionIndicators => Set<SessionIndicator>();
     public DbSet<SurveyAnswer> SurveyAnswers => Set<SurveyAnswer>();
+    public DbSet<AssessmentDecision> AssessmentDecisions => Set<AssessmentDecision>();
+    public DbSet<AuditEntry> AuditEntries => Set<AuditEntry>();
     public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
 
     protected override void OnModelCreating(ModelBuilder builder)

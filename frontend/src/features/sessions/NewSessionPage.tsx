@@ -1,9 +1,9 @@
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { ArrowLeft, Plus, Trash2 } from 'lucide-react'
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Controller, useFieldArray, useForm, useWatch } from 'react-hook-form'
-import { Link, useNavigate } from 'react-router'
+import { Link, useNavigate, useSearchParams } from 'react-router'
 import { z } from 'zod'
 import { api, unwrap } from '@/api/client'
 import { FormError } from '@/components/form/FormError'
@@ -39,6 +39,8 @@ type NewSessionForm = z.infer<typeof schema>
 
 export function NewSessionPage() {
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
+  const presetEmployeeId = searchParams.get('employeeId')
   const queryClient = useQueryClient()
   const employees = useQuery(employeesQuery('', false))
   const grades = useQuery(gradesQuery)
@@ -98,6 +100,15 @@ export function NewSessionPage() {
     const allowed = new Set((rules.data ?? []).filter((r) => r.gradeId === selected?.gradeId).map((r) => r.role))
     form.setValue('participants', form.getValues('participants').filter((p) => allowed.has(p.role)))
   }
+
+  // Переход из карточки сотрудника: выбираем его, когда справочники загрузились
+  const ready = !!employees.data && !!grades.data && !!rules.data
+  useEffect(() => {
+    if (ready && presetEmployeeId && !form.getValues('employeeId') && employees.data?.some((e) => e.id === presetEmployeeId)) {
+      onEmployeeChange(presetEmployeeId)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- однократная предустановка
+  }, [ready, presetEmployeeId])
 
   return (
     <section className="mx-auto max-w-3xl space-y-4">

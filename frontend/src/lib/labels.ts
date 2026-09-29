@@ -39,3 +39,22 @@ export const sessionTypeLabels: Record<SessionType, string> = {
   Transition: 'Переход на следующий грейд',
   Confirmation: 'Подтверждение текущего грейда',
 }
+
+export type DecisionOutcome = 'Promoted' | 'GradeConfirmed' | 'NotConfirmed'
+
+export const decisionOutcomeLabels: Record<DecisionOutcome, string> = {
+  Promoted: 'Повышен',
+  GradeConfirmed: 'Грейд подтверждён',
+  NotConfirmed: 'Грейд не подтверждён',
+}
+
+export const auditActionLabels: Record<string, string> = {
+  'session.launched': 'Опрос запущен',
+  'session.cancelled': 'Сессия отменена',
+  'session.closed_early': 'Опрос завершён досрочно',
+  'session.draft_deleted': 'Черновик удалён',
+  'session.decided': 'Принято решение',
+  'participant.added': 'Добавлен респондент',
+  'participant.removed': 'Удалён респондент',
+  'participant.link_reissued': 'Перевыпущена ссылка',
+}

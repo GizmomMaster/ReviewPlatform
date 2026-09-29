@@ -19,6 +19,10 @@ internal static class EmployeeEndpoints
             TypedResults.Ok(await sender.Send(new GetEmployeeQuery(id), ct)))
             .WithName("GetEmployee");
 
+        employees.MapGet("/{id:guid}/history", async (Guid id, ISender sender, CancellationToken ct) =>
+            TypedResults.Ok(await sender.Send(new GetEmployeeHistoryQuery(id), ct)))
+            .WithName("GetEmployeeHistory");
+
         employees.MapPost("/", async (CreateEmployeeCommand command, ISender sender, CancellationToken ct) =>
         {
             var employee = await sender.Send(command, ct);

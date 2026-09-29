@@ -50,7 +50,8 @@ public sealed record SessionDetailsDto(
     string OwnerName,
     int IndicatorCount,
     IReadOnlyList<ParticipantDto> Participants,
-    IReadOnlyList<RoleRequirementDto> RoleRequirements);
+    IReadOnlyList<RoleRequirementDto> RoleRequirements,
+    DecisionDto? Decision);
 
 /// <summary>Ссылка на анкету. Показывается один раз — токен в открытом виде не хранится.</summary>
 public sealed record ParticipantLinkDto(Guid ParticipantId, string FullName, EvaluatorRole Role, string Url);

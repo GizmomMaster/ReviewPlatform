@@ -164,6 +164,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/employees/{id}/history": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["GetEmployeeHistory"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/tracks": {
         parameters: {
             query?: never;
@@ -356,6 +372,54 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/assessment-sessions/{id}/close-early": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["CloseSessionEarly"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/assessment-sessions/{id}/decision": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["DecideSession"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/assessment-sessions/{id}/audit": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["GetSessionAudit"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/assessment-sessions/{id}/report": {
         parameters: {
             query?: never;
@@ -449,6 +513,13 @@ export interface components {
             participant: components["schemas"]["ParticipantDto"];
             link: null | components["schemas"]["ParticipantLinkDto"];
         };
+        AuditEntryDto: {
+            /** Format: date-time */
+            occurredAtUtc: string;
+            userName: null | string;
+            action: string;
+            details: null | string;
+        };
         AuthResponse: {
             accessToken: string;
             /** Format: date-time */
@@ -502,6 +573,24 @@ export interface components {
             role: string;
             password: string;
         };
+        DecideRequest: {
+            outcome: components["schemas"]["DecisionOutcome"];
+            /** Format: uuid */
+            newGradeId: string;
+            comment: string;
+            planItems: components["schemas"]["PlanItemDto"][];
+        };
+        DecisionDto: {
+            outcome: components["schemas"]["DecisionOutcome"];
+            newGrade: components["schemas"]["GradeDto"];
+            comment: string;
+            /** Format: date-time */
+            decidedAtUtc: string;
+            decidedByName: string;
+            planItems: components["schemas"]["PlanItemDto"][];
+        };
+        /** @enum {unknown} */
+        DecisionOutcome: "Promoted" | "GradeConfirmed" | "NotConfirmed" | null;
         EmployeeDto: {
             /** Format: uuid */
             id: string;
@@ -518,6 +607,21 @@ export interface components {
             managerUserId: string;
             managerName: string;
             isActive: boolean;
+        };
+        EmployeeHistoryItemDto: {
+            /** Format: uuid */
+            sessionId: string;
+            type: components["schemas"]["SessionType"];
+            currentGradeCode: string;
+            targetGradeCode: null | string;
+            status: components["schemas"]["SessionStatus"];
+            /** Format: date-time */
+            createdAtUtc: string;
+            /** Format: date-time */
+            closedAtUtc: null | string;
+            outcome: null | components["schemas"]["DecisionOutcome"];
+            newGradeCode: null | string;
+            decisionComment: null | string;
         };
         /** @enum {unknown} */
         EvaluatorRole: "Self" | "Peer" | "TeamLead" | "Manager" | "Rck" | "ItLeader";
@@ -599,6 +703,13 @@ export interface components {
         };
         /** @enum {unknown} */
         ParticipantStatus: "Pending" | "InProgress" | "Submitted" | "Removed";
+        PlanItemDto: {
+            text: string;
+            /** Format: uuid */
+            sessionIndicatorId: null | string;
+            /** Format: date */
+            dueDate: null | string;
+        };
         PreviewGroupDto: {
             name: string;
             indicators: components["schemas"]["PreviewIndicatorDto"][];
@@ -701,6 +812,7 @@ export interface components {
             indicatorCount: number;
             participants: components["schemas"]["ParticipantDto"][];
             roleRequirements: components["schemas"]["RoleRequirementDto"][];
+            decision: null | components["schemas"]["DecisionDto"];
         };
         SessionListItemDto: {
             /** Format: uuid */
@@ -1150,6 +1262,28 @@ export interface operations {
             };
         };
     };
+    GetEmployeeHistory: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EmployeeHistoryItemDto"][];
+                };
+            };
+        };
+    };
     GetTracks: {
         parameters: {
             query?: never;
@@ -1484,6 +1618,74 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ParticipantLinkDto"];
+                };
+            };
+        };
+    };
+    CloseSessionEarly: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    DecideSession: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DecideRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DecisionDto"];
+                };
+            };
+        };
+    };
+    GetSessionAudit: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AuditEntryDto"][];
                 };
             };
         };
