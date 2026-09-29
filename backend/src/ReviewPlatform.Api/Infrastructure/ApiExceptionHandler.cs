@@ -3,6 +3,8 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Http;
 using FluentValidation;
 using Microsoft.AspNetCore.Diagnostics;
+using Microsoft.EntityFrameworkCore;
+using Npgsql;
 using ReviewPlatform.Application.Common;
 using ReviewPlatform.Domain.Common;
 
@@ -25,6 +27,18 @@ internal sealed class ApiExceptionHandler(IProblemDetailsService problemDetails)
             },
             NotFoundException => new ProblemDetails { Title = "Не найдено", Status = StatusCodes.Status404NotFound },
             DomainException => new ProblemDetails { Title = "Нарушено бизнес-правило", Detail = exception.Message, Status = StatusCodes.Status409Conflict },
+            DbUpdateConcurrencyException => new ProblemDetails
+            {
+                Title = "Данные изменились",
+                Detail = "Кто-то изменил эти данные одновременно с вами. Обновите страницу и повторите действие.",
+                Status = StatusCodes.Status409Conflict,
+            },
+            DbUpdateException { InnerException: PostgresException { SqlState: PostgresErrorCodes.UniqueViolation } } => new ProblemDetails
+            {
+                Title = "Конфликт данных",
+                Detail = "Такая запись уже существует. Обновите страницу и повторите действие.",
+                Status = StatusCodes.Status409Conflict,
+            },
             _ => null,
         };
         if (problem is null)

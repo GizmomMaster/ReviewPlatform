@@ -1,12 +1,14 @@
 import { createBrowserRouter, Navigate } from 'react-router'
 import { AdminLayout } from '@/components/layout/AdminLayout'
 import { NotFoundPage } from '@/components/layout/NotFoundPage'
-import { DashboardPage } from '@/features/admin/DashboardPage'
 import { ChangePasswordPage } from '@/features/auth/ChangePasswordPage'
 import { LoginPage } from '@/features/auth/LoginPage'
 import { RequireAuth } from '@/features/auth/RequireAuth'
 import { EmployeesPage } from '@/features/employees/EmployeesPage'
 import { MatrixPage } from '@/features/matrix/MatrixPage'
+import { NewSessionPage } from '@/features/sessions/NewSessionPage'
+import { SessionPage } from '@/features/sessions/SessionPage'
+import { SessionsPage } from '@/features/sessions/SessionsPage'
 import { SurveyPage } from '@/features/survey/SurveyPage'
 import { UsersPage } from '@/features/users/UsersPage'
 
@@ -29,7 +31,9 @@ export const router = createBrowserRouter([
       </RequireAuth>
     ),
     children: [
-      { index: true, element: <DashboardPage /> },
+      { index: true, element: <SessionsPage /> },
+      { path: 'sessions/new', element: <NewSessionPage /> },
+      { path: 'sessions/:id', element: <SessionPage /> },
       { path: 'employees', element: <EmployeesPage /> },
       { path: 'matrix', element: <MatrixPage /> },
       {

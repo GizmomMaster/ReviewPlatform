@@ -44,6 +44,7 @@ public static class DependencyInjection
         services.AddSingleton(TimeProvider.System);
         services.AddScoped<AuthService>();
         services.AddScoped<IIdentityService, IdentityService>();
+        services.AddSingleton<ISurveyLinks, SurveyLinks>();
 
         services.Configure<SeedOptions>(configuration.GetSection(SeedOptions.SectionName));
         services.AddScoped<DatabaseInitializer>();

@@ -47,6 +47,7 @@ app.MapAuthEndpoints();
 app.MapUserEndpoints();
 app.MapEmployeeEndpoints();
 app.MapMatrixEndpoints();
+app.MapSessionEndpoints();
 
 await app.Services.InitializeDatabaseAsync();
 await app.RunAsync();

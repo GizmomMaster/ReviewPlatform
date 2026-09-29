@@ -2,6 +2,7 @@ using FluentValidation;
 using Microsoft.Extensions.DependencyInjection;
 using ReviewPlatform.Application.Common;
 using ReviewPlatform.Application.Employees;
+using ReviewPlatform.Application.Sessions;
 
 namespace ReviewPlatform.Application;
 
@@ -18,6 +19,9 @@ public static class DependencyInjection
         services.AddValidatorsFromAssembly(assembly, includeInternalTypes: true);
         services.AddScoped<EmployeeReader>();
         services.AddScoped<EmployeeRules>();
+        services.AddScoped<SessionAccess>();
+        services.AddScoped<SessionReader>();
+        services.AddScoped<IndicatorSnapshotBuilder>();
         return services;
     }
 }

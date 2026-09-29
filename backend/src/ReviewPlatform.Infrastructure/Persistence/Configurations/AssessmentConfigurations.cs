@@ -1,0 +1,54 @@
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata.Builders;
+using ReviewPlatform.Domain.Assessments;
+using ReviewPlatform.Domain.Employees;
+using ReviewPlatform.Domain.Matrix;
+using ReviewPlatform.Infrastructure.Identity;
+
+namespace ReviewPlatform.Infrastructure.Persistence.Configurations;
+
+internal sealed class AssessmentSessionConfiguration : IEntityTypeConfiguration<AssessmentSession>
+{
+    public void Configure(EntityTypeBuilder<AssessmentSession> builder)
+    {
+        builder.Property(s => s.Version).IsRowVersion(); // xmin
+
+        builder.HasOne<Employee>().WithMany().HasForeignKey(s => s.EmployeeId).OnDelete(DeleteBehavior.Restrict);
+        builder.HasOne<Track>().WithMany().HasForeignKey(s => s.TrackId).OnDelete(DeleteBehavior.Restrict);
+        builder.HasOne<Grade>().WithMany().HasForeignKey(s => s.CurrentGradeId).OnDelete(DeleteBehavior.Restrict);
+        builder.HasOne<Grade>().WithMany().HasForeignKey(s => s.TargetGradeId).OnDelete(DeleteBehavior.Restrict);
+        builder.HasOne<AppUser>().WithMany().HasForeignKey(s => s.OwnerUserId).OnDelete(DeleteBehavior.Restrict);
+
+        // Не больше одной незавершённой сессии на сотрудника — защита от гонки поверх проверки в приложении
+        var active = string.Join(", ", AssessmentSession.ActiveStatuses.Select(s => $"'{s}'"));
+        builder.HasIndex(s => s.EmployeeId).IsUnique().HasFilter($"status IN ({active})").HasDatabaseName("ux_assessment_sessions_active_employee");
+        builder.HasIndex(s => new { s.OwnerUserId, s.Status });
+
+        builder.HasMany(s => s.Participants).WithOne().HasForeignKey(p => p.SessionId).OnDelete(DeleteBehavior.Cascade);
+        builder.Navigation(s => s.Participants).HasField("_participants");
+        builder.HasMany(s => s.Indicators).WithOne().HasForeignKey(i => i.SessionId).OnDelete(DeleteBehavior.Cascade);
+        builder.Navigation(s => s.Indicators).HasField("_indicators");
+    }
+}
+
+internal sealed class ParticipantConfiguration : IEntityTypeConfiguration<Participant>
+{
+    public void Configure(EntityTypeBuilder<Participant> builder)
+    {
+        builder.Property(p => p.FullName).HasMaxLength(200);
+        builder.Property(p => p.Email).HasMaxLength(256);
+        builder.Property(p => p.TokenHash).HasMaxLength(64);
+        builder.HasIndex(p => p.TokenHash).IsUnique().HasFilter("token_hash IS NOT NULL");
+        builder.Ignore(p => p.IsActive);
+    }
+}
+
+internal sealed class SessionIndicatorConfiguration : IEntityTypeConfiguration<SessionIndicator>
+{
+    public void Configure(EntityTypeBuilder<SessionIndicator> builder)
+    {
+        builder.Property(i => i.GroupName).HasMaxLength(200);
+        builder.Property(i => i.GradeCode).HasMaxLength(16);
+        builder.Property(i => i.Text).HasMaxLength(Indicator.MaxTextLength);
+    }
+}

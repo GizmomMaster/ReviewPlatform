@@ -212,10 +212,163 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/grade-role-rules": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["GetGradeRoleRules"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/assessment-sessions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["ListSessions"];
+        put?: never;
+        post: operations["CreateSession"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/assessment-sessions/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["GetSession"];
+        put: operations["UpdateSession"];
+        post?: never;
+        delete: operations["DeleteSession"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/assessment-sessions/{id}/survey-preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["GetSurveyPreview"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/assessment-sessions/{id}/launch": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["LaunchSession"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/assessment-sessions/{id}/cancel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["CancelSession"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/assessment-sessions/{id}/participants": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["AddParticipant"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/assessment-sessions/{id}/participants/{participantId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete: operations["RemoveParticipant"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/assessment-sessions/{id}/participants/{participantId}/reissue-link": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["ReissueParticipantLink"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        AddParticipantRequest: {
+            fullName: string;
+            email: string;
+            role: components["schemas"]["EvaluatorRole"];
+        };
+        AddParticipantResult: {
+            participant: components["schemas"]["ParticipantDto"];
+            link: null | components["schemas"]["ParticipantLinkDto"];
+        };
         AuthResponse: {
             accessToken: string;
             /** Format: date-time */
@@ -253,6 +406,14 @@ export interface components {
             /** Format: uuid */
             managerUserId: null | string;
         };
+        CreateSessionCommand: {
+            /** Format: uuid */
+            employeeId: string;
+            type: components["schemas"]["SessionType"];
+            /** Format: date-time */
+            deadlineAtUtc: string;
+            participants: components["schemas"]["NewParticipant"][];
+        };
         CreateUserCommand: {
             email: string;
             fullName: string;
@@ -276,6 +437,8 @@ export interface components {
             managerName: string;
             isActive: boolean;
         };
+        /** @enum {unknown} */
+        EvaluatorRole: "Self" | "Peer" | "TeamLead" | "Manager" | "Rck" | "ItLeader";
         GradeDto: {
             /** Format: uuid */
             id: string;
@@ -283,6 +446,16 @@ export interface components {
             name: string;
             /** Format: int32 */
             order: number;
+        };
+        GradeRoleRuleDto: {
+            /** Format: uuid */
+            gradeId: string;
+            gradeCode: string;
+            role: components["schemas"]["EvaluatorRole"];
+            /** Format: int32 */
+            minCount: number;
+            /** Format: int32 */
+            maxCount: number;
         };
         IndicatorDto: {
             /** Format: uuid */
@@ -293,6 +466,8 @@ export interface components {
             /** Format: int32 */
             order: number;
         };
+        /** @enum {unknown} */
+        LevelKind: "Current" | "Target";
         LoginRequest: {
             email: string;
             password: string;
@@ -302,8 +477,116 @@ export interface components {
             grades: components["schemas"]["GradeDto"][];
             groups: components["schemas"]["CompetencyGroupDto"][];
         };
+        NewParticipant: {
+            fullName: string;
+            email: string;
+            role: components["schemas"]["EvaluatorRole"];
+        };
+        ParticipantDto: {
+            /** Format: uuid */
+            id: string;
+            fullName: string;
+            email: string;
+            role: components["schemas"]["EvaluatorRole"];
+            status: components["schemas"]["ParticipantStatus"];
+            /** Format: date-time */
+            tokenIssuedAtUtc: null | string;
+            /** Format: date-time */
+            firstOpenedAtUtc: null | string;
+            /** Format: date-time */
+            submittedAtUtc: null | string;
+        };
+        ParticipantLinkDto: {
+            /** Format: uuid */
+            participantId: string;
+            fullName: string;
+            role: components["schemas"]["EvaluatorRole"];
+            url: string;
+        };
+        /** @enum {unknown} */
+        ParticipantStatus: "Pending" | "InProgress" | "Submitted" | "Removed";
+        PreviewGroupDto: {
+            name: string;
+            indicators: components["schemas"]["PreviewIndicatorDto"][];
+        };
+        PreviewIndicatorDto: {
+            text: string;
+            gradeCode: string;
+            levelKind: components["schemas"]["LevelKind"];
+        };
         ResetPasswordRequest: {
             newPassword: string;
+        };
+        RoleRequirementDto: {
+            role: components["schemas"]["EvaluatorRole"];
+            /** Format: int32 */
+            minCount: number;
+            /** Format: int32 */
+            maxCount: number;
+            /** Format: int32 */
+            count: number;
+            isSatisfied: boolean;
+        };
+        SessionDetailsDto: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            employeeId: string;
+            employeeName: string;
+            employeeEmail: string;
+            trackName: string;
+            type: components["schemas"]["SessionType"];
+            currentGrade: components["schemas"]["GradeDto"];
+            targetGrade: null | components["schemas"]["GradeDto"];
+            status: components["schemas"]["SessionStatus"];
+            /** Format: date-time */
+            deadlineAtUtc: string;
+            /** Format: date-time */
+            createdAtUtc: string;
+            /** Format: date-time */
+            launchedAtUtc: null | string;
+            /** Format: date-time */
+            completedAtUtc: null | string;
+            /** Format: date-time */
+            closedAtUtc: null | string;
+            /** Format: uuid */
+            ownerUserId: string;
+            ownerName: string;
+            /** Format: int32 */
+            indicatorCount: number;
+            participants: components["schemas"]["ParticipantDto"][];
+            roleRequirements: components["schemas"]["RoleRequirementDto"][];
+        };
+        SessionListItemDto: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            employeeId: string;
+            employeeName: string;
+            type: components["schemas"]["SessionType"];
+            currentGradeCode: string;
+            targetGradeCode: null | string;
+            status: components["schemas"]["SessionStatus"];
+            /** Format: date-time */
+            deadlineAtUtc: string;
+            /** Format: int32 */
+            participantsTotal: number;
+            /** Format: int32 */
+            participantsSubmitted: number;
+            /** Format: uuid */
+            ownerUserId: string;
+            ownerName: string;
+            /** Format: date-time */
+            createdAtUtc: string;
+        };
+        /** @enum {unknown} */
+        SessionStatus: "Draft" | "InProgress" | "Overdue" | "AwaitingDecision" | "Closed" | "Cancelled";
+        /** @enum {unknown} */
+        SessionType: "Transition" | "Confirmation";
+        SurveyPreviewDto: {
+            /** Format: int32 */
+            indicatorCount: number;
+            groups: components["schemas"]["PreviewGroupDto"][];
         };
         TrackDto: {
             /** Format: uuid */
@@ -322,6 +605,11 @@ export interface components {
             /** Format: uuid */
             managerUserId: null | string;
             isActive: boolean;
+        };
+        UpdateSessionRequest: {
+            type: components["schemas"]["SessionType"];
+            /** Format: date-time */
+            deadlineAtUtc: string;
         };
         UpdateUserRequest: {
             fullName: string;
@@ -727,6 +1015,275 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+        };
+    };
+    GetGradeRoleRules: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GradeRoleRuleDto"][];
+                };
+            };
+        };
+    };
+    ListSessions: {
+        parameters: {
+            query?: {
+                status?: components["schemas"]["SessionStatus"];
+                employeeId?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SessionListItemDto"][];
+                };
+            };
+        };
+    };
+    CreateSession: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateSessionCommand"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SessionDetailsDto"];
+                };
+            };
+        };
+    };
+    GetSession: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SessionDetailsDto"];
+                };
+            };
+        };
+    };
+    UpdateSession: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateSessionRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SessionDetailsDto"];
+                };
+            };
+        };
+    };
+    DeleteSession: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    GetSurveyPreview: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SurveyPreviewDto"];
+                };
+            };
+        };
+    };
+    LaunchSession: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ParticipantLinkDto"][];
+                };
+            };
+        };
+    };
+    CancelSession: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    AddParticipant: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AddParticipantRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AddParticipantResult"];
+                };
+            };
+        };
+    };
+    RemoveParticipant: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                participantId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    ReissueParticipantLink: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                participantId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ParticipantLinkDto"];
+                };
             };
         };
     };

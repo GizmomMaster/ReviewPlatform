@@ -34,6 +34,7 @@ public sealed class ApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
         builder.UseSetting("ConnectionStrings:Default", _postgres.GetConnectionString());
         builder.UseSetting("Jwt:SigningKey", "test-signing-key-0123456789-0123456789-abcdef");
         builder.UseSetting("Auth:SecureCookies", "false");
+        builder.UseSetting("FrontendBaseUrl", "http://localhost:8080");
         builder.UseSetting("BootstrapAdmin:Email", BootstrapAdminEmail);
         builder.UseSetting("BootstrapAdmin:Password", BootstrapAdminPassword);
     }

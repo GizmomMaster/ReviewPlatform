@@ -22,6 +22,10 @@ internal static class MatrixEndpoints
             await sender.Send(new GetMatrixQuery(trackId), ct) is { } matrix ? TypedResults.Ok(matrix) : TypedResults.NotFound())
             .WithName("GetMatrix");
 
+        api.MapGet("/grade-role-rules", async (ISender sender, CancellationToken ct) =>
+            TypedResults.Ok(await sender.Send(new GetGradeRoleRulesQuery(), ct)))
+            .WithName("GetGradeRoleRules");
+
         return app;
     }
 }
