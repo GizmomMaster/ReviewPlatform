@@ -51,7 +51,7 @@
 * Email: MailKit через SMTP, шаблоны писем — Razor или Fluid.
 * Фоновые задачи: **Transactional Outbox** (таблица `EmailOutbox` в той же БД, запись в одной транзакции с бизнес-изменением) + `BackgroundService`, который отправляет письма с ретраями. Планировщик (`BackgroundService` с периодическим тиком) для напоминаний и обработки дедлайнов. `Channel<T>` без персистентности не использовать — задачи не должны теряться при рестарте.
 * Excel: ClosedXML (импорт матрицы, выгрузка отчёта).
-* OpenAPI (`Microsoft.AspNetCore.OpenApi`) + Scalar UI.
+* OpenAPI (`Microsoft.AspNetCore.OpenApi`) + Swagger UI (`Swashbuckle.AspNetCore.SwaggerUI`).
 
 ### 3.2 Frontend
 

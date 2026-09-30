@@ -3,7 +3,7 @@ using Microsoft.OpenApi;
 
 namespace ReviewPlatform.Api.Infrastructure;
 
-/// <summary>Добавляет в OpenAPI схему Bearer, чтобы в Scalar можно было вызывать защищённые эндпоинты.</summary>
+/// <summary>Добавляет в OpenAPI схему Bearer, чтобы в Swagger UI можно было вызывать защищённые эндпоинты.</summary>
 internal sealed class BearerSecuritySchemeTransformer : IOpenApiDocumentTransformer
 {
     public Task TransformAsync(OpenApiDocument document, OpenApiDocumentTransformerContext context, CancellationToken cancellationToken)

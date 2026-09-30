@@ -4,7 +4,6 @@ using ReviewPlatform.Api.Endpoints;
 using ReviewPlatform.Api.Infrastructure;
 using ReviewPlatform.Application;
 using ReviewPlatform.Infrastructure;
-using Scalar.AspNetCore;
 
 const string FrontendCorsPolicy = "frontend";
 
@@ -40,6 +39,19 @@ app.UseApiRequestLogging();
 app.UseExceptionHandler();
 app.UseStatusCodePages();
 app.UseCors(FrontendCorsPolicy);
+
+if (app.Environment.IsDevelopment())
+{
+    // Swagger UI (/swagger) поверх схемы /openapi/v1.json. До авторизации: это статические файлы,
+    // а политика по умолчанию требует входа для любого запроса.
+    app.UseSwaggerUI(options =>
+    {
+        options.SwaggerEndpoint("/openapi/v1.json", "ReviewPlatform API");
+        options.DocumentTitle = "ReviewPlatform API";
+        options.EnablePersistAuthorization();
+    });
+}
+
 app.UseAuthentication();
 app.UseAuthorization();
 app.UseRateLimiter();
@@ -47,7 +59,6 @@ app.UseRateLimiter();
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi().AllowAnonymous();
-    app.MapScalarApiReference().AllowAnonymous();
 }
 
 app.MapHealthChecks("/health").AllowAnonymous();
