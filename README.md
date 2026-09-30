@@ -16,6 +16,8 @@
 
 ## Запуск
 
+### Linux-сервер
+
 Нужен только Docker. Локальные Node.js и плагин `docker compose` не обязательны — скрипты в `scripts/` запускают их в контейнерах.
 
 ```sh
@@ -23,14 +25,44 @@ cp .env.example .env          # при необходимости поменяй
 scripts/compose.sh up -d --build
 ```
 
+### Windows и macOS
+
+Нужен [Docker Desktop](https://www.docker.com/products/docker-desktop/) (на Windows — с бэкендом WSL 2, он предлагается при установке) и Git. Node.js и .NET ставить не нужно — всё собирается в контейнерах. Подходят и Intel, и Apple Silicon: все образы мультиархитектурные.
+
+1. Запустите Docker Desktop и дождитесь статуса «Engine running».
+2. Склонируйте репозиторий и перейдите в него:
+   ```sh
+   git clone git@github.com:GizmomMaster/ReviewPlatform.git
+   cd ReviewPlatform
+   ```
+3. Создайте `.env` из примера (можно пропустить — тогда берутся значения по умолчанию):
+   * macOS (Terminal): `cp .env.example .env`
+   * Windows (PowerShell): `Copy-Item .env.example .env`
+4. Соберите и запустите (первая сборка — 5–10 минут):
+   ```sh
+   docker compose up -d --build
+   ```
+5. Откройте http://localhost:8080. Адреса остальных сервисов — в таблице ниже.
+
+Скрипты `scripts/*.sh` на Windows не нужны: в Docker Desktop уже есть `docker compose`, поэтому везде, где в README написано `scripts/compose.sh`, используйте `docker compose`. Скрипт демо-данных запускается Python 3: на macOS — `python3 scripts/seed-demo.py`, на Windows — `py scripts\seed-demo.py`.
+
+Остановить: `docker compose down` (данные сохраняются), удалить вместе с базой: `docker compose down -v`.
+
+**Если что-то не работает:**
+* **Порт занят** (`port is already allocated`) — поменяйте `FRONTEND_PORT`, `BACKEND_PORT`, `POSTGRES_PORT` или `MAILPIT_UI_PORT` в `.env` и запустите заново.
+* **Сборка бэкенда падает с нехваткой памяти** — в Docker Desktop → Settings → Resources выделите не меньше 4 ГБ.
+* Логи сервиса: `docker compose logs -f backend`.
+
+### Адреса и вход
+
 | Сервис | Адрес |
 |---|---|
 | Приложение | http://localhost:8080 |
-| API | http://localhost:5080 (документация: `/scalar/v1`), только с самого сервера |
-| Mailpit (письма) | http://localhost:8025, только с самого сервера |
-| PostgreSQL | localhost:55432, только с самого сервера |
+| API | http://localhost:5080 (документация: `/scalar/v1`), только локально |
+| Mailpit (письма) | http://localhost:8025, только локально |
+| PostgreSQL | localhost:55432, только локально |
 
-Наружу открыто только приложение (порт 8080). Остальное с другой машины — через SSH-туннель, например `ssh -L 8025:localhost:8025 <сервер>`.
+Наружу открыто только приложение (порт 8080). Если стенд на сервере, остальное открывайте через SSH-туннель, например `ssh -L 8025:localhost:8025 <сервер>`.
 
 **Вход в режиме разработки:** `admin@example.com` / `Admin123!`. Это первый администратор, его создаёт бэкенд при пустой БД из `appsettings.Development.json`. При первом входе система попросит сменить пароль.
 
