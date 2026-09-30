@@ -53,6 +53,21 @@ public sealed class SessionEndpointsTests(ApiFactory factory)
     }
 
     [Fact]
+    public async Task Create_DeadlineWithOffset_IsStoredAsUtc()
+    {
+        var (_, client) = await factory.SignInAsNewUserAsync(Roles.Manager);
+        var employee = await CreateEmployeeAsync(client, "E3");
+        var deadline = new DateTimeOffset(DateTime.SpecifyKind(Deadline.Date.AddHours(18), DateTimeKind.Unspecified), TimeSpan.FromHours(3));
+
+        var response = await client.PostAsJsonAsync("/api/assessment-sessions",
+            new { employeeId = employee.Id, type = "Transition", deadlineAtUtc = deadline.ToString("O"), participants = Array.Empty<object>() }, Ct);
+
+        Assert.Equal(HttpStatusCode.Created, response.StatusCode);
+        var session = (await response.Content.ReadFromJsonAsync<SessionDetailsDto>(ApiFactory.Json, Ct))!;
+        Assert.Equal(deadline.UtcDateTime, session.DeadlineAtUtc);
+    }
+
+    [Fact]
     public async Task Create_ForAnotherManagersEmployee_Returns404()
     {
         var (_, owner) = await factory.SignInAsNewUserAsync(Roles.Manager);
