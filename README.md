@@ -90,11 +90,7 @@ scripts/compose.sh -f docker-compose.yml -f docker-compose.prod.yml up -d --buil
 
 **Логи.** Бэкенд пишет в stdout JSON (одно событие на строку, формат Serilog compact) — удобно для Loki, ELK и т. п. Уровни — секция `Serilog:MinimumLevel`, например `Serilog__MinimumLevel__Default=Warning`. Токены анкет в логах API и nginx маскируются (`/api/surveys/***`). За nginx реальный адрес клиента берётся из `X-Forwarded-For` — от него считаются лимиты на вход и анкеты.
 
-**Резервные копии.** Сервис `backup` раз в сутки делает `pg_dump` в `./backups` (`BACKUP_DIR`) и хранит копии 14 дней (`BACKUP_KEEP_DAYS`). Каталог стоит регулярно копировать на другой сервер. Восстановление (текущие данные заменяются):
-
-```sh
-scripts/restore.sh backups/reviewplatform-20261001-030000.dump
-```
+**Резервные копии** в проект не входят: бэкапы PostgreSQL настраивает инфраструктура (данные лежат в томе `postgres-data`).
 
 ## Разработка
 

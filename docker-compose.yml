@@ -18,26 +18,6 @@ services:
       timeout: 5s
       retries: 10
 
-  # Резервные копии: pg_dump раз в BACKUP_INTERVAL_HOURS в каталог BACKUP_DIR, хранятся BACKUP_KEEP_DAYS дней.
-  # Восстановление: scripts/restore.sh backups/<файл>.dump
-  backup:
-    image: postgres:17-alpine
-    entrypoint: ["/bin/sh", "/backup.sh"]
-    environment:
-      PGHOST: postgres
-      PGDATABASE: ${POSTGRES_DB:-reviewplatform}
-      PGUSER: ${POSTGRES_USER:-reviewplatform}
-      PGPASSWORD: ${POSTGRES_PASSWORD:-reviewplatform}
-      BACKUP_INTERVAL_HOURS: ${BACKUP_INTERVAL_HOURS:-24}
-      BACKUP_KEEP_DAYS: ${BACKUP_KEEP_DAYS:-14}
-    volumes:
-      - ./scripts/backup.sh:/backup.sh:ro
-      - ${BACKUP_DIR:-./backups}:/backups
-    depends_on:
-      postgres:
-        condition: service_healthy
-    restart: unless-stopped
-
   mailpit:
     image: axllent/mailpit:latest
     # Только локально: в письмах ссылки на анкеты

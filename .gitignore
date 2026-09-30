@@ -16,9 +16,6 @@ dist/
 !.vscode/extensions.json
 .DS_Store
 
-# Резервные копии БД
-backups/
-
 # Playwright
 frontend/test-results/
 frontend/playwright-report/

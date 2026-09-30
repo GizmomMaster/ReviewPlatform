@@ -33,7 +33,3 @@ services:
 
   frontend:
     restart: unless-stopped
-
-  backup:
-    environment:
-      PGPASSWORD: ${POSTGRES_PASSWORD:?задайте POSTGRES_PASSWORD}
