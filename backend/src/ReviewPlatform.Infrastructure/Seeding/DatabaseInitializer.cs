@@ -1,0 +1,186 @@
+using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
+using Npgsql;
+using ReviewPlatform.Application.Common;
+using ReviewPlatform.Application.Matrix;
+using ReviewPlatform.Domain.Matrix;
+using ReviewPlatform.Infrastructure.Identity;
+using ReviewPlatform.Infrastructure.Persistence;
+
+namespace ReviewPlatform.Infrastructure.Seeding;
+
+/// <summary>
+/// Применяет миграции и заполняет справочники. Идемпотентен: существующие данные не трогает.
+/// Выполняется под advisory-lock, чтобы несколько экземпляров приложения не заполняли БД одновременно.
+/// Блокировка берётся на отдельном соединении без пула: EF при миграции переоткрывает своё соединение,
+/// и сессионная блокировка на нём осталась бы висеть в пуле. Закрытие отдельного соединения
+/// гарантированно снимает блокировку, даже если инициализация упала.
+/// </summary>
+public sealed partial class DatabaseInitializer(
+    AppDbContext db,
+    IMatrixSpreadsheet spreadsheet,
+    IOptions<SeedOptions> options,
+    IOptions<BootstrapAdminOptions> adminOptions,
+    RoleManager<IdentityRole<Guid>> roles,
+    UserManager<AppUser> users,
+    ILogger<DatabaseInitializer> logger)
+{
+    private const long InitializationLockKey = 0x5245_5649_4557; // "REVIEW"
+
+    public async Task InitializeAsync(CancellationToken cancellationToken = default)
+    {
+        var lockConnectionString = new NpgsqlConnectionStringBuilder(db.Database.GetConnectionString()) { Pooling = false }.ConnectionString;
+        await using var lockConnection = new NpgsqlConnection(lockConnectionString);
+        await lockConnection.OpenAsync(cancellationToken);
+        await using (var acquire = new NpgsqlCommand($"SELECT pg_advisory_lock({InitializationLockKey})", lockConnection) { CommandTimeout = 300 })
+        {
+            await acquire.ExecuteNonQueryAsync(cancellationToken);
+        }
+
+        await db.Database.MigrateAsync(cancellationToken);
+
+        var grades = await SeedGradesAsync(cancellationToken);
+        await SeedRoleRulesAsync(grades, cancellationToken);
+        var track = await SeedBackendTrackAsync(cancellationToken);
+        await SeedMatrixAsync(track, grades, cancellationToken);
+        await SeedRolesAsync();
+        await SeedBootstrapAdminAsync();
+        // Блокировка снимается закрытием lockConnection (пул отключён — сессия Postgres завершается)
+    }
+
+    private async Task<Dictionary<string, Grade>> SeedGradesAsync(CancellationToken cancellationToken)
+    {
+        var existing = await db.Grades.ToDictionaryAsync(g => g.Code, cancellationToken);
+        for (var i = 0; i < ReferenceData.Grades.Length; i++)
+        {
+            var (code, name) = ReferenceData.Grades[i];
+            if (!existing.ContainsKey(code))
+            {
+                existing[code] = db.Grades.Add(new Grade(code, name, i + 1)).Entity;
+            }
+        }
+
+        await db.SaveChangesAsync(cancellationToken);
+        return existing;
+    }
+
+    private async Task SeedRoleRulesAsync(Dictionary<string, Grade> grades, CancellationToken cancellationToken)
+    {
+        if (await db.GradeRoleRules.AnyAsync(cancellationToken))
+        {
+            return;
+        }
+
+        foreach (var grade in grades.Values)
+        {
+            foreach (var (role, min, max) in ReferenceData.RoleRulesFor(grade.Code))
+            {
+                db.GradeRoleRules.Add(new GradeRoleRule(grade.Id, role, min, max));
+            }
+        }
+
+        await db.SaveChangesAsync(cancellationToken);
+    }
+
+    private async Task<Track> SeedBackendTrackAsync(CancellationToken cancellationToken)
+    {
+        var track = await db.Tracks.SingleOrDefaultAsync(t => t.Code == ReferenceData.BackendTrackCode, cancellationToken);
+        if (track is null)
+        {
+            track = db.Tracks.Add(new Track(ReferenceData.BackendTrackCode, "Backend")).Entity;
+            await db.SaveChangesAsync(cancellationToken);
+        }
+
+        return track;
+    }
+
+    private async Task SeedMatrixAsync(Track track, Dictionary<string, Grade> grades, CancellationToken cancellationToken)
+    {
+        if (await db.CompetencyGroups.AnyAsync(g => g.TrackId == track.Id, cancellationToken))
+        {
+            return;
+        }
+
+        var path = Path.IsPathRooted(options.Value.MatrixFile)
+            ? options.Value.MatrixFile
+            : Path.Combine(AppContext.BaseDirectory, options.Value.MatrixFile);
+        if (!File.Exists(path))
+        {
+            LogMatrixFileMissing(path);
+            return;
+        }
+
+        MatrixReadResult result;
+        await using (var stream = File.OpenRead(path))
+        {
+            result = spreadsheet.Read(stream);
+        }
+
+        // Начальная матрица — тот же импорт, что и из админки, в пустое направление
+        var plan = MatrixImportPlan.Create(track, [.. grades.Values], [], result.Rows);
+        if (result.Errors.Count > 0 || !plan.IsValid)
+        {
+            throw new InvalidOperationException(
+                $"Начальная матрица {path} содержит ошибки:{Environment.NewLine}{string.Join(Environment.NewLine, result.Errors.Concat(plan.Errors))}");
+        }
+
+        db.CompetencyGroups.AddRange(plan.Apply());
+        await db.SaveChangesAsync(cancellationToken);
+        LogMatrixSeeded(result.Rows.Count, track.Code);
+    }
+
+    private async Task SeedRolesAsync()
+    {
+        foreach (var role in Roles.All)
+        {
+            if (!await roles.RoleExistsAsync(role))
+            {
+                ThrowIfFailed(await roles.CreateAsync(new IdentityRole<Guid>(role) { Id = Guid.CreateVersion7() }));
+            }
+        }
+    }
+
+    /// <summary>Первый администратор — только если пользователей ещё нет и заданы учётные данные.</summary>
+    private async Task SeedBootstrapAdminAsync()
+    {
+        if (await users.Users.AnyAsync())
+        {
+            return;
+        }
+
+        var admin = adminOptions.Value;
+        if (string.IsNullOrWhiteSpace(admin.Email) || string.IsNullOrWhiteSpace(admin.Password))
+        {
+            LogNoBootstrapAdmin();
+            return;
+        }
+
+        var email = admin.Email.Trim().ToLowerInvariant();
+        var user = new AppUser { UserName = email, Email = email, FullName = admin.FullName, MustChangePassword = true };
+        ThrowIfFailed(await users.CreateAsync(user, admin.Password));
+        ThrowIfFailed(await users.AddToRoleAsync(user, Roles.Admin));
+        LogBootstrapAdminCreated(email);
+    }
+
+    private static void ThrowIfFailed(IdentityResult result)
+    {
+        if (!result.Succeeded)
+        {
+            throw new InvalidOperationException(string.Join("; ", result.Errors.Select(e => e.Description)));
+        }
+    }
+
+    [LoggerMessage(Level = LogLevel.Warning, Message = "No users and BootstrapAdmin is not configured: nobody can sign in.")]
+    private partial void LogNoBootstrapAdmin();
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "Bootstrap admin {Email} created; password change is required on first sign-in.")]
+    private partial void LogBootstrapAdminCreated(string email);
+
+    [LoggerMessage(Level = LogLevel.Warning, Message = "Seed matrix file not found: {Path}. Matrix left empty.")]
+    private partial void LogMatrixFileMissing(string path);
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "Seeded {Count} indicators for track {Track}.")]
+    private partial void LogMatrixSeeded(int count, string track);
+}

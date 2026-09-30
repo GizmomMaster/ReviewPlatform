@@ -1,0 +1,3 @@
+# Скрипты запускаются через shebang: на Windows не превращать LF в CRLF
+*.sh text eol=lf
+*.py text eol=lf
