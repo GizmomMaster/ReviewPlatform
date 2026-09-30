@@ -205,7 +205,7 @@ Draft / InProgress / Overdue ──cancel──▶ Cancelled
 
 ### 8.2 Пользователи и сотрудники
 
-1. Admin: CRUD пользователей (Admin / Manager), блокировка, сброс пароля.
+1. Admin: создание и редактирование пользователей (Admin / Manager), блокировка, сброс пароля. Пользователи не удаляются физически — только блокируются (на них ссылаются сессии, решения и журнал аудита).
 2. CRUD сотрудников: Admin — все, Manager — только свои. Поля: ФИО, email, направление, текущий грейд, руководитель.
 3. Карточка сотрудника: текущий грейд, история сессий и решений.
 
@@ -223,7 +223,7 @@ Draft / InProgress / Overdue ──cancel──▶ Cancelled
 
 ### 8.4 Мониторинг
 
-1. Список сессий: сотрудник, грейд → целевой грейд, статус, прогресс («3 из 5 сдали»), дедлайн (с подсветкой просроченных и приближающихся), владелец. Фильтры по статусу, сотруднику, направлению.
+1. Список сессий: сотрудник, грейд → целевой грейд, статус, прогресс («3 из 5 сдали»), дедлайн (с подсветкой просроченных и приближающихся), владелец. Фильтр по статусу; в API также по сотруднику (используется в карточке сотрудника). Фильтр по направлению — после появления второго направления.
 2. Карточка сессии: респонденты со статусами (не открыл / в процессе / сдал), даты, действия из раздела 7.
 
 ### 8.5 Отчёт по сессии
@@ -275,13 +275,13 @@ Draft / InProgress / Overdue ──cancel──▶ Cancelled
 
 ## 9. API
 
-Все admin-эндпоинты требуют JWT. Ответы об ошибках — `ProblemDetails` (RFC 9457). Списки — пагинация `?page=&pageSize=`.
+Все admin-эндпоинты требуют JWT. Ответы об ошибках — `ProblemDetails` (RFC 9457). Списки отдаются целиком, без пагинации: при ожидаемых объёмах (десятки–сотни записей) она не нужна; `?page=&pageSize=` добавляется при росте данных.
 
 ### 9.1 Аутентификация
 * `POST /api/auth/login`, `POST /api/auth/refresh`, `POST /api/auth/logout`, `POST /api/auth/change-password`
 
 ### 9.2 Пользователи и сотрудники
-* `GET|POST /api/users`, `PUT|DELETE /api/users/{id}`, `POST /api/users/{id}/reset-password` — Admin
+* `GET|POST /api/users`, `PUT /api/users/{id}` (в т. ч. блокировка через `isActive`), `POST /api/users/{id}/reset-password` — Admin
 * `GET|POST /api/employees`, `GET|PUT|DELETE /api/employees/{id}`, `GET /api/employees/{id}/history`
 
 ### 9.3 Матрица
@@ -296,7 +296,7 @@ Draft / InProgress / Overdue ──cancel──▶ Cancelled
 * `GET|PUT /api/grade-role-rules`
 
 ### 9.4 Сессии
-* `GET /api/assessment-sessions` (фильтры), `POST /api/assessment-sessions` (Draft)
+* `GET /api/assessment-sessions` (`?status=&employeeId=`), `POST /api/assessment-sessions` (Draft)
 * `GET|PUT|DELETE /api/assessment-sessions/{id}` (PUT/DELETE — только Draft)
 * `GET /api/assessment-sessions/{id}/survey-preview`
 * `POST /api/assessment-sessions/{id}/launch` → ссылки респондентов
@@ -307,7 +307,7 @@ Draft / InProgress / Overdue ──cancel──▶ Cancelled
 * `POST /api/assessment-sessions/{id}/participants/{pid}/reissue-link` → новая ссылка
 * `POST /api/assessment-sessions/{id}/participants/{pid}/resend-invite`
 * `GET /api/assessment-sessions/{id}/report`, `GET /api/assessment-sessions/{id}/report/export`
-* `POST /api/assessment-sessions/{id}/decision`, `GET /api/assessment-sessions/{id}/decision`
+* `POST /api/assessment-sessions/{id}/decision`; принятое решение и план развития возвращаются в составе `GET /api/assessment-sessions/{id}`
 
 ### 9.5 Публичный API опроса
 * `GET /api/surveys/{token}` — метаданные, шкала, индикаторы, текущий черновик
@@ -327,7 +327,7 @@ Draft / InProgress / Overdue ──cancel──▶ Cancelled
 * Журнал аудита ключевых действий (запуск, отмена, продление, перевыпуск ссылки, решение): кто, когда, что.
 
 ### 10.2 Надёжность и согласованность
-* Оптимистическая блокировка (`xmin`) у `AssessmentSession` и `Participant`; при конфликте в `SubmitSurveyCommand` — повтор до 3 раз.
+* Оптимистическая блокировка (`xmin`) у `AssessmentSession` и `Participant`; при конфликте в `SubmitSurveyCommand` — повтор до 5 раз со случайной задержкой.
 * Переход в `AwaitingDecision` и постановка письма в outbox — в одной транзакции.
 * Идемпотентность отправки анкеты: повторный `submit` сданной анкеты → 409 с понятным сообщением.
 * Обработка дедлайнов и напоминаний — идемпотентная (повторный тик не отправляет письма повторно).
