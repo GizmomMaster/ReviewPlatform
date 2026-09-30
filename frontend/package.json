@@ -9,7 +9,7 @@
     "lint": "oxlint --deny-warnings",
     "preview": "vite preview",
     "typecheck": "tsc -b",
-    "gen:api": "openapi-typescript ${API_SPEC_URL:-http://localhost:5080/openapi/v1.json} -o src/api/schema.d.ts",
+    "gen:api": "openapi-typescript ${API_SPEC_URL:-http://localhost:15080/openapi/v1.json} -o src/api/schema.d.ts",
     "e2e": "playwright test"
   },
   "dependencies": {

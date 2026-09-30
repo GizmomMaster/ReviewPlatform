@@ -6,7 +6,7 @@
 Повторный запуск безопасен: существующие сотрудники и сотрудники с сессиями пропускаются.
 
 Запуск на сервере:  scripts/seed-demo.py
-Переменные: REVIEW_API_URL (http://localhost:5080), REVIEW_ADMIN_EMAIL (admin@example.com),
+Переменные: REVIEW_API_URL (http://localhost:15080), REVIEW_ADMIN_EMAIL (admin@example.com),
 REVIEW_ADMIN_PASSWORD (если не задан — спросит).
 """
 import getpass
@@ -18,7 +18,7 @@ import urllib.error
 import urllib.request
 from datetime import datetime, timedelta, timezone
 
-API = os.environ.get("REVIEW_API_URL", "http://localhost:5080").rstrip("/")
+API = os.environ.get("REVIEW_API_URL", "http://localhost:15080").rstrip("/")
 
 EMPLOYEES = [
     ("Алексей Смирнов", "a.smirnov@example.com", "E1"),

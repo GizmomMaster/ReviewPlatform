@@ -13,7 +13,7 @@ export default defineConfig({
   },
   server: {
     proxy: {
-      '/api': process.env.API_PROXY_TARGET ?? 'http://localhost:5080',
+      '/api': process.env.API_PROXY_TARGET ?? 'http://localhost:15080',
     },
   },
 })

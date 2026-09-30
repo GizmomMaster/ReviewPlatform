@@ -45,7 +45,7 @@ jobs:
       - run: docker compose up -d --build postgres mailpit backend frontend
       - name: Wait for backend
         run: |
-          for i in $(seq 1 60); do curl -sf http://localhost:5080/health && exit 0; sleep 2; done
+          for i in $(seq 1 60); do curl -sf http://localhost:15080/health && exit 0; sleep 2; done
           docker compose logs backend; exit 1
       - uses: actions/setup-node@v4
         with:
@@ -59,8 +59,8 @@ jobs:
       - run: npm run e2e
         working-directory: frontend
         env:
-          E2E_BASE_URL: http://localhost:8080
-          E2E_MAILPIT_URL: http://localhost:8025
+          E2E_BASE_URL: http://localhost:18080
+          E2E_MAILPIT_URL: http://localhost:18025
       - if: failure()
         run: docker compose logs backend frontend
       - if: failure()

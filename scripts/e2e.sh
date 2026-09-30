@@ -1,7 +1,7 @@
 #!/usr/bin/env sh
 # Сквозные тесты Playwright в одноразовом контейнере против запущенного стека (scripts/compose.sh up -d).
 # Chromium кешируется в ~/.cache/ms-playwright, его системные зависимости ставятся на время прогона.
-# Адреса: E2E_BASE_URL (http://localhost:8080), E2E_MAILPIT_URL (http://localhost:8025). Аргументы передаются в playwright test.
+# Адреса: E2E_BASE_URL (http://localhost:18080), E2E_MAILPIT_URL (http://localhost:18025). Аргументы передаются в playwright test.
 set -e
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 BROWSERS="${PLAYWRIGHT_CACHE_DIR:-$HOME/.cache/ms-playwright}"
@@ -9,8 +9,8 @@ mkdir -p "$BROWSERS"
 exec docker run --rm --network host \
   -e HOST_UID="$(id -u)" -e HOST_GID="$(id -g)" \
   -e PLAYWRIGHT_BROWSERS_PATH=/ms-playwright \
-  -e E2E_BASE_URL="${E2E_BASE_URL:-http://localhost:8080}" \
-  -e E2E_MAILPIT_URL="${E2E_MAILPIT_URL:-http://localhost:8025}" \
+  -e E2E_BASE_URL="${E2E_BASE_URL:-http://localhost:18080}" \
+  -e E2E_MAILPIT_URL="${E2E_MAILPIT_URL:-http://localhost:18025}" \
   -e E2E_ADMIN_EMAIL -e E2E_ADMIN_PASSWORD \
   -v "$BROWSERS:/ms-playwright" \
   -v "$ROOT/frontend:/app" \

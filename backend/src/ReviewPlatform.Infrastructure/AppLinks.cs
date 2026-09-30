@@ -5,7 +5,7 @@ namespace ReviewPlatform.Infrastructure;
 
 internal sealed class AppLinks(IConfiguration configuration) : IAppLinks
 {
-    private readonly string _baseUrl = (configuration["FrontendBaseUrl"] ?? "http://localhost:8080").TrimEnd('/');
+    private readonly string _baseUrl = (configuration["FrontendBaseUrl"] ?? "http://localhost:18080").TrimEnd('/');
 
     public string Survey(string token) => $"{_baseUrl}/survey/{Uri.EscapeDataString(token)}";
 

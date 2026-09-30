@@ -1,6 +1,6 @@
 import { expect, request, type APIRequestContext, type Page } from '@playwright/test'
 
-const baseURL = process.env.E2E_BASE_URL ?? 'http://localhost:8080'
+const baseURL = process.env.E2E_BASE_URL ?? 'http://localhost:18080'
 const mailpitURL = process.env.E2E_MAILPIT_URL
 const adminEmail = process.env.E2E_ADMIN_EMAIL ?? 'admin@example.com'
 const adminPassword = process.env.E2E_ADMIN_PASSWORD ?? 'Admin123!'

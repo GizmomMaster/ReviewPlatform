@@ -1,7 +1,7 @@
 import { defineConfig, devices } from '@playwright/test'
 
 /**
- * Сквозные тесты против запущенного приложения (по умолчанию — docker compose: http://localhost:8080).
+ * Сквозные тесты против запущенного приложения (по умолчанию — docker compose: http://localhost:18080).
  * Письма проверяются через API Mailpit (E2E_MAILPIT_URL), если он задан.
  */
 export default defineConfig({
@@ -14,7 +14,7 @@ export default defineConfig({
   forbidOnly: !!process.env.CI,
   reporter: process.env.CI ? [['list'], ['html', { open: 'never' }]] : 'list',
   use: {
-    baseURL: process.env.E2E_BASE_URL ?? 'http://localhost:8080',
+    baseURL: process.env.E2E_BASE_URL ?? 'http://localhost:18080',
     locale: 'ru-RU',
     timezoneId: 'Europe/Moscow',
     trace: 'retain-on-failure',
