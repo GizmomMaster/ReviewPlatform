@@ -26,9 +26,11 @@ scripts/compose.sh up -d --build
 | Сервис | Адрес |
 |---|---|
 | Приложение | http://localhost:8080 |
-| API | http://localhost:5080 (документация: `/scalar/v1`) |
-| Mailpit (письма) | http://localhost:8025 |
-| PostgreSQL | localhost:55432 |
+| API | http://localhost:5080 (документация: `/scalar/v1`), только с самого сервера |
+| Mailpit (письма) | http://localhost:8025, только с самого сервера |
+| PostgreSQL | localhost:55432, только с самого сервера |
+
+Наружу открыто только приложение (порт 8080). Остальное с другой машины — через SSH-туннель, например `ssh -L 8025:localhost:8025 <сервер>`.
 
 **Вход в режиме разработки:** `admin@example.com` / `Admin123!`. Это первый администратор, его создаёт бэкенд при пустой БД из `appsettings.Development.json`. При первом входе система попросит сменить пароль.
 

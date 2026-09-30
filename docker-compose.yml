@@ -8,7 +8,8 @@ services:
       POSTGRES_USER: ${POSTGRES_USER:-reviewplatform}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-reviewplatform}
     ports:
-      - "${POSTGRES_PORT:-55432}:5432"
+      # Только локально: база не должна быть доступна из сети
+      - "127.0.0.1:${POSTGRES_PORT:-55432}:5432"
     volumes:
       - postgres-data:/var/lib/postgresql/data
     healthcheck:
@@ -39,9 +40,10 @@ services:
 
   mailpit:
     image: axllent/mailpit:latest
+    # Только локально: в письмах ссылки на анкеты
     ports:
-      - "${MAILPIT_UI_PORT:-8025}:8025"
-      - "${MAILPIT_SMTP_PORT:-1025}:1025"
+      - "127.0.0.1:${MAILPIT_UI_PORT:-8025}:8025"
+      - "127.0.0.1:${MAILPIT_SMTP_PORT:-1025}:1025"
 
   backend:
     build:
@@ -53,8 +55,9 @@ services:
       Smtp__Host: mailpit
       Smtp__Port: 1025
       FrontendBaseUrl: ${FRONTEND_BASE_URL:-http://localhost:8080}
+    # Только локально: снаружи API доступен через nginx фронтенда (/api)
     ports:
-      - "${BACKEND_PORT:-5080}:8080"
+      - "127.0.0.1:${BACKEND_PORT:-5080}:8080"
     depends_on:
       postgres:
         condition: service_healthy
