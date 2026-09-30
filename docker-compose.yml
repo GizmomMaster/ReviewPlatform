@@ -9,7 +9,7 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-reviewplatform}
     ports:
       # Только локально: база не должна быть доступна из сети
-      - "127.0.0.1:${POSTGRES_PORT:-25432}:5432"
+      - "127.0.0.1:${POSTGRES_PORT:?задайте POSTGRES_PORT в .env (см. .env.example)}:5432"
     volumes:
       - postgres-data:/var/lib/postgresql/data
     healthcheck:
@@ -22,8 +22,8 @@ services:
     image: axllent/mailpit:latest
     # Только локально: в письмах ссылки на анкеты
     ports:
-      - "127.0.0.1:${MAILPIT_UI_PORT:-18025}:8025"
-      - "127.0.0.1:${MAILPIT_SMTP_PORT:-11025}:1025"
+      - "127.0.0.1:${MAILPIT_UI_PORT:?задайте MAILPIT_UI_PORT в .env (см. .env.example)}:8025"
+      - "127.0.0.1:${MAILPIT_SMTP_PORT:?задайте MAILPIT_SMTP_PORT в .env (см. .env.example)}:1025"
 
   backend:
     build:
@@ -34,10 +34,10 @@ services:
       ConnectionStrings__Default: Host=postgres;Database=${POSTGRES_DB:-reviewplatform};Username=${POSTGRES_USER:-reviewplatform};Password=${POSTGRES_PASSWORD:-reviewplatform}
       Smtp__Host: mailpit
       Smtp__Port: 1025
-      FrontendBaseUrl: ${FRONTEND_BASE_URL:-http://localhost:18080}
+      FrontendBaseUrl: ${FRONTEND_BASE_URL:-http://localhost:${FRONTEND_PORT}}
     # Только локально: снаружи API доступен через nginx фронтенда (/api)
     ports:
-      - "127.0.0.1:${BACKEND_PORT:-15080}:8080"
+      - "127.0.0.1:${BACKEND_PORT:?задайте BACKEND_PORT в .env (см. .env.example)}:8080"
     depends_on:
       postgres:
         condition: service_healthy
@@ -46,7 +46,7 @@ services:
     build:
       context: frontend
     ports:
-      - "${FRONTEND_PORT:-18080}:80"
+      - "${FRONTEND_PORT:?задайте FRONTEND_PORT в .env (см. .env.example)}:80"
     depends_on:
       - backend
 

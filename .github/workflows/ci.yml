@@ -42,10 +42,15 @@ jobs:
     needs: [backend, frontend]
     steps:
       - uses: actions/checkout@v4
+      - name: Prepare .env
+        run: |
+          cp .env.example .env
+          # Порты из .env — в переменные следующих шагов (без комментариев)
+          sed -n 's/^\([A-Z_]*_PORT\)=\([0-9]*\).*/\1=\2/p' .env >> "$GITHUB_ENV"
       - run: docker compose up -d --build postgres mailpit backend frontend
       - name: Wait for backend
         run: |
-          for i in $(seq 1 60); do curl -sf http://localhost:15080/health && exit 0; sleep 2; done
+          for i in $(seq 1 60); do curl -sf "http://localhost:$BACKEND_PORT/health" && exit 0; sleep 2; done
           docker compose logs backend; exit 1
       - uses: actions/setup-node@v4
         with:
@@ -59,8 +64,8 @@ jobs:
       - run: npm run e2e
         working-directory: frontend
         env:
-          E2E_BASE_URL: http://localhost:18080
-          E2E_MAILPIT_URL: http://localhost:18025
+          E2E_BASE_URL: http://localhost:${{ env.FRONTEND_PORT }}
+          E2E_MAILPIT_URL: http://localhost:${{ env.MAILPIT_UI_PORT }}
       - if: failure()
         run: docker compose logs backend frontend
       - if: failure()

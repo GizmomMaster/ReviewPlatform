@@ -21,7 +21,7 @@
 Нужен только Docker. Локальные Node.js и плагин `docker compose` не обязательны — скрипты в `scripts/` запускают их в контейнерах.
 
 ```sh
-cp .env.example .env          # при необходимости поменяйте порты и пароли
+cp .env.example .env          # порты и пароли — в .env
 scripts/compose.sh up -d --build
 ```
 
@@ -35,14 +35,14 @@ scripts/compose.sh up -d --build
    git clone git@github.com:GizmomMaster/ReviewPlatform.git
    cd ReviewPlatform
    ```
-3. Создайте `.env` из примера (можно пропустить — тогда берутся значения по умолчанию):
+3. Создайте `.env` из примера — в нём порты и пароли, без него compose не запустится:
    * macOS (Terminal): `cp .env.example .env`
    * Windows (PowerShell): `Copy-Item .env.example .env`
 4. Соберите и запустите (первая сборка — 5–10 минут):
    ```sh
    docker compose up -d --build
    ```
-5. Откройте http://localhost:18080. Адреса остальных сервисов — в таблице ниже.
+5. Откройте `http://localhost:<FRONTEND_PORT>` (порт — в `.env`). Остальные адреса — в таблице ниже.
 
 Скрипты `scripts/*.sh` на Windows не нужны: в Docker Desktop уже есть `docker compose`, поэтому везде, где в README написано `scripts/compose.sh`, используйте `docker compose`. Скрипт демо-данных запускается Python 3: на macOS — `python3 scripts/seed-demo.py`, на Windows — `py scripts\seed-demo.py`.
 
@@ -56,14 +56,16 @@ scripts/compose.sh up -d --build
 
 ### Адреса и вход
 
-| Сервис | Адрес |
-|---|---|
-| Приложение | http://localhost:18080 |
-| API | http://localhost:15080 (документация: Swagger UI — `/swagger`, схема — `/openapi/v1.json`; только в режиме разработки), только локально |
-| Mailpit (письма) | http://localhost:18025 (SMTP — 11025), только локально |
-| PostgreSQL | localhost:25432, только локально |
+Порты задаются в `.env` (пример — в `.env.example`):
 
-Порты нестандартные, чтобы не конфликтовать с локальными PostgreSQL, Mailpit и другими проектами; любой можно поменять в `.env` (`FRONTEND_PORT`, `BACKEND_PORT`, `MAILPIT_UI_PORT`, `MAILPIT_SMTP_PORT`, `POSTGRES_PORT`; при смене `FRONTEND_PORT` поменяйте и `FRONTEND_BASE_URL`). Наружу открыто только приложение. Если стенд на сервере, остальное открывайте через SSH-туннель, например `ssh -L 18025:localhost:18025 <сервер>`.
+| Сервис | Адрес | Доступ |
+|---|---|---|
+| Приложение | `http://localhost:<FRONTEND_PORT>` | из сети |
+| API | `http://localhost:<BACKEND_PORT>`; в режиме разработки Swagger UI — `/swagger`, схема — `/openapi/v1.json` | только локально |
+| Mailpit (письма) | `http://localhost:<MAILPIT_UI_PORT>`, SMTP — `<MAILPIT_SMTP_PORT>` | только локально |
+| PostgreSQL | `localhost:<POSTGRES_PORT>` | только локально |
+
+Если стенд на сервере, закрытые сервисы открывайте через SSH-туннель: `ssh -L <порт>:localhost:<порт> <сервер>`.
 
 **Вход в режиме разработки:** `admin@example.com` / `Admin123!`. Это первый администратор, его создаёт бэкенд при пустой БД из `appsettings.Development.json`. При первом входе система попросит сменить пароль.
 
@@ -101,8 +103,10 @@ scripts/compose.sh -f docker-compose.yml -f docker-compose.prod.yml up -d --buil
 cd backend
 dotnet build
 dotnet test
-dotnet run --project src/ReviewPlatform.Api   # http://localhost:15080, нужен Postgres из compose
+dotnet run --project src/ReviewPlatform.Api   # нужен Postgres из compose
 ```
+
+Без Docker адрес API задаётся в `Properties/launchSettings.json`, подключение к БД — в `appsettings.Development.json`: порт в строке подключения должен совпадать с `POSTGRES_PORT` из `.env`.
 
 При старте API применяет миграции и заполняет справочники и матрицу из `seed/backend-matrix.xlsx` (если матрица пуста). Интеграционные тесты поднимают свой Postgres через Testcontainers — нужен запущенный Docker.
 
