@@ -38,7 +38,7 @@ scripts/compose.sh up -d --build
 3. Создайте `.env` из примера — в нём порты и пароли, без него compose не запустится:
    * macOS (Terminal): `cp .env.example .env`
    * Windows (PowerShell): `Copy-Item .env.example .env`
-4. Соберите и запустите (первая сборка — 5–10 минут):
+4. Соберите и запустите (первая сборка — 15–20 минут):
    ```sh
    docker compose up -d --build
    ```
